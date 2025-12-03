@@ -1,0 +1,12 @@
+config:
+  # Aiven Configuration
+  clustera-infrastructure:aiven_project: your-aiven-project-name-prod
+  clustera-infrastructure:kafka_service: your-kafka-service-name-prod
+
+  # GCP Configuration
+  clustera-infrastructure:gcp_project: your-gcp-project-id-prod
+  gcp:project: your-gcp-project-id-prod
+  gcp:region: us-central1
+
+  # AWS Configuration (for S3 backend)
+  aws:region: us-east-1

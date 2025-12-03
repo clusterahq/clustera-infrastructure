@@ -1,0 +1,8 @@
+name: clustera-infrastructure
+runtime:
+  name: python
+  options:
+    toolchain: uv
+description: Infrastructure for Clustera platform - Kafka topics in Aiven and GCP Pub/Sub
+backend:
+  url: s3://clustera-pulumi-state
