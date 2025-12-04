@@ -62,7 +62,7 @@ Edit `.env` with your actual credentials:
 - **R2 endpoint** - Your Cloudflare account's R2 endpoint URL
 - **PULUMI_CONFIG_PASSPHRASE** - Passphrase for encrypting secrets in stack configs
 - **AIVEN_TOKEN** - Your Aiven API token
-- **GOOGLE_CREDENTIALS** - Path to your GCP service account key JSON
+- **GOOGLE_CREDENTIALS** - Optional: Path to GCP service account key (see GCP auth options below)
 
 > **Note:** `PULUMI_ACCESS_TOKEN` is NOT needed when using R2 backend. It's only required if you switch to Pulumi Cloud for state management.
 
@@ -166,25 +166,53 @@ pulumi config set gcp:project your-gcp-project-id
 pulumi config set gcp:region us-central1
 ```
 
-### 5. Verify GCP Setup
+### 5. Set Up GCP Authentication
 
-Ensure your GCP service account has the necessary permissions:
+You have two options for GCP authentication:
+
+#### Option A: User Account (Local Development)
+
+Easiest for local development - uses your personal GCP credentials:
 
 ```bash
-# Authenticate with GCP
-gcloud auth activate-service-account --key-file=$GOOGLE_CREDENTIALS
+# Authenticate with your GCP user account
+gcloud auth application-default login
 
-# Enable Pub/Sub API if not already enabled
+# No need to set GOOGLE_CREDENTIALS environment variable
+# Remove or comment it out in your .env file
+
+# Enable Pub/Sub API
 gcloud services enable pubsub.googleapis.com --project=your-gcp-project-id
-
-# Verify permissions
-gcloud projects get-iam-policy your-gcp-project-id \
-  --flatten="bindings[].members" \
-  --filter="bindings.members:serviceAccount:*"
 ```
 
-Required IAM roles for the service account:
+**Required IAM roles for your user account:**
 - `roles/pubsub.admin` or `roles/pubsub.editor`
+
+#### Option B: Service Account (CI/CD & Production)
+
+Recommended for CI/CD pipelines and production deployments:
+
+```bash
+# Create a service account
+gcloud iam service-accounts create pulumi-infrastructure \
+  --display-name="Pulumi Infrastructure"
+
+# Grant necessary permissions
+gcloud projects add-iam-policy-binding your-gcp-project-id \
+  --member="serviceAccount:pulumi-infrastructure@your-project.iam.gserviceaccount.com" \
+  --role="roles/pubsub.admin"
+
+# Create and download key
+gcloud iam service-accounts keys create ~/gcp-pulumi-key.json \
+  --iam-account=pulumi-infrastructure@your-project.iam.gserviceaccount.com
+
+# Set in .env
+echo "GOOGLE_CREDENTIALS=$HOME/gcp-pulumi-key.json" >> .env
+```
+
+**When to use which:**
+- **Local dev:** User account (easier, no key management)
+- **CI/CD:** Service account (better security, auditing, lifecycle management)
 
 ## Usage
 
