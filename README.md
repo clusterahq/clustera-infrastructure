@@ -9,11 +9,11 @@ Pulumi-based infrastructure as code for the Clustera platform. This project mana
 - [Python 3.11+](https://www.python.org/downloads/)
 - [uv](https://github.com/astral-sh/uv) - Fast Python package installer
 - [Pulumi CLI](https://www.pulumi.com/docs/get-started/install/)
-- [AWS CLI](https://aws.amazon.com/cli/) - For S3 state backend
+- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (optional) - For R2 bucket management
 - Access to:
+  - Cloudflare account with R2 enabled
   - Aiven account with API token
   - GCP project with Pub/Sub API enabled
-  - AWS S3 bucket for Pulumi state storage
 
 ## Project Structure
 
@@ -58,7 +58,8 @@ cp .env.example .env
 ```
 
 Edit `.env` with your actual credentials:
-- **AWS credentials** - For S3 backend state storage
+- **R2 credentials** - Cloudflare R2 access key and secret for state storage
+- **R2 endpoint** - Your Cloudflare account's R2 endpoint URL
 - **PULUMI_ACCESS_TOKEN** - From [Pulumi Cloud](https://app.pulumi.com/account/tokens) (optional, if using Pulumi Cloud)
 - **AIVEN_TOKEN** - Your Aiven API token
 - **GOOGLE_CREDENTIALS** - Path to your GCP service account key JSON
@@ -69,36 +70,62 @@ Load the environment variables:
 source .env  # or use direnv for automatic loading
 ```
 
-### 3. Set Up S3 Backend
+### 3. Set Up R2 Backend for State Storage
 
-Create an S3 bucket for Pulumi state storage:
+Clustera uses Cloudflare R2 (S3-compatible storage) for Pulumi state. R2 offers zero egress fees and is more cost-effective than AWS S3.
+
+#### Create R2 Bucket
+
+1. **Navigate to Cloudflare R2:**
+   - Go to https://dash.cloudflare.com
+   - Select your account → R2 → Overview
+
+2. **Create a new bucket:**
+   ```bash
+   # Using Cloudflare dashboard or wrangler CLI:
+   npx wrangler r2 bucket create clustera-pulumi-state
+   ```
+
+3. **Create R2 API Token:**
+   - Go to R2 → Manage R2 API Tokens → Create API Token
+   - Permissions: **Object Read & Write**
+   - Bucket: **clustera-pulumi-state** (or apply to all buckets)
+   - Save the **Access Key ID** and **Secret Access Key**
+
+#### Configure Environment for R2
+
+Update your `.env` file with R2 credentials:
 
 ```bash
-# Replace with your desired bucket name
-aws s3 mb s3://clustera-pulumi-state --region us-east-1
+# R2 Access Credentials
+AWS_ACCESS_KEY_ID=<your-r2-access-key-id>
+AWS_SECRET_ACCESS_KEY=<your-r2-secret-access-key>
+AWS_REGION=auto
 
-# Enable versioning (recommended)
-aws s3api put-bucket-versioning \
-  --bucket clustera-pulumi-state \
-  --versioning-configuration Status=Enabled
+# R2 Endpoint - replace <account-id> with your Cloudflare account ID
+AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
+```
 
-# Enable encryption
-aws s3api put-bucket-encryption \
-  --bucket clustera-pulumi-state \
-  --server-side-encryption-configuration '{
-    "Rules": [{
-      "ApplyServerSideEncryptionByDefault": {
-        "SSEAlgorithm": "AES256"
-      }
-    }]
-  }'
+**Finding your Account ID:**
+- In Cloudflare dashboard, it's in the URL: `dash.cloudflare.com/<account-id>/...`
+- Or check R2 overview page for the endpoint URL
+
+#### Verify R2 Configuration
+
+Test that Pulumi can access R2:
+
+```bash
+# Login to R2 backend
+pulumi login s3://clustera-pulumi-state
+
+# Should show: Logged in to ... as <your-user>
 ```
 
 Update `Pulumi.yaml` if you used a different bucket name:
 
 ```yaml
 backend:
-  url: s3://your-bucket-name
+  url: s3://your-r2-bucket-name
 ```
 
 ### 4. Initialize Pulumi Stack
@@ -135,9 +162,6 @@ pulumi config set kafka_service your-kafka-service-name
 pulumi config set gcp_project your-gcp-project-id
 pulumi config set gcp:project your-gcp-project-id
 pulumi config set gcp:region us-central1
-
-# Set AWS region (for S3 backend)
-pulumi config set aws:region us-east-1
 ```
 
 ### 5. Verify GCP Setup
@@ -286,12 +310,15 @@ export GOOGLE_CREDENTIALS=/path/to/key.json
 gcloud auth activate-service-account --key-file=$GOOGLE_CREDENTIALS
 ```
 
-**AWS**: For S3 backend access:
+**R2 (State Backend)**: For R2 backend access:
 ```bash
-aws configure
-# or
-export AWS_ACCESS_KEY_ID=your_key
-export AWS_SECRET_ACCESS_KEY=your_secret
+export AWS_ACCESS_KEY_ID=your_r2_access_key
+export AWS_SECRET_ACCESS_KEY=your_r2_secret_key
+export AWS_REGION=auto
+export AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
+
+# Test R2 access
+pulumi login s3://clustera-pulumi-state
 ```
 
 ### Missing Resources
@@ -323,8 +350,12 @@ on:
 
 env:
   PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
-  AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+  # R2 credentials for state backend
+  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+  AWS_REGION: auto
+  AWS_ENDPOINT_URL_S3: ${{ secrets.R2_ENDPOINT_URL }}
+  # Provider credentials
   AIVEN_TOKEN: ${{ secrets.AIVEN_TOKEN }}
   GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -370,6 +401,29 @@ jobs:
           stack-name: prod
           work-dir: .
 ```
+
+### Required GitHub Secrets
+
+For the CI/CD workflow to work, configure these secrets in your GitHub repository:
+
+1. **R2_ACCESS_KEY_ID** - Your Cloudflare R2 access key ID
+2. **R2_SECRET_ACCESS_KEY** - Your Cloudflare R2 secret access key
+3. **R2_ENDPOINT_URL** - Your R2 endpoint (e.g., `https://<account-id>.r2.cloudflarestorage.com`)
+4. **AIVEN_TOKEN** - Your Aiven API token
+5. **GCP_CREDENTIALS** - Your GCP service account JSON key (as string)
+6. **PULUMI_ACCESS_TOKEN** - Optional, if using Pulumi Cloud for state
+
+To add secrets:
+```bash
+# Using GitHub CLI
+gh secret set R2_ACCESS_KEY_ID --repo clusterahq/clustera-infrastructure
+gh secret set R2_SECRET_ACCESS_KEY --repo clusterahq/clustera-infrastructure
+gh secret set R2_ENDPOINT_URL --repo clusterahq/clustera-infrastructure
+gh secret set AIVEN_TOKEN --repo clusterahq/clustera-infrastructure
+gh secret set GCP_CREDENTIALS < gcp-key.json --repo clusterahq/clustera-infrastructure
+```
+
+Or via GitHub web interface: **Settings → Secrets and variables → Actions → New repository secret**
 
 ## Development
 
