@@ -19,18 +19,20 @@ Pulumi-based infrastructure as code for the Clustera platform. This project mana
 
 ```
 clustera-infrastructure/
-├── Pulumi.yaml                    # Project definition with S3 backend
-├── Pulumi.dev.yaml.example        # Example dev stack config
-├── Pulumi.prod.yaml.example       # Example prod stack config
-├── pyproject.toml                 # Python dependencies (uv)
-├── Makefile                       # Helper commands for common tasks
-├── __main__.py                    # Main Pulumi program entry point
-├── infrastructure/                # Infrastructure modules
+├── Pulumi.yaml                        # Project definition with S3 backend
+├── Pulumi.development.yaml.example    # Example development stack config
+├── Pulumi.testing.yaml.example        # Example testing stack config
+├── Pulumi.staging.yaml.example        # Example staging stack config
+├── Pulumi.prod.yaml.example           # Example production stack config
+├── pyproject.toml                     # Python dependencies (uv)
+├── Makefile                           # Helper commands for common tasks
+├── __main__.py                        # Main Pulumi program entry point
+├── infrastructure/                    # Infrastructure modules
 │   ├── __init__.py
-│   ├── kafka.py                   # Aiven Kafka topics
-│   └── pubsub.py                  # GCP Pub/Sub topics
-├── .env.example                   # Environment variables template
-└── README.md                      # This file
+│   ├── kafka.py                       # Aiven Kafka topics
+│   └── pubsub.py                      # GCP Pub/Sub topics
+├── .env.example                       # Environment variables template
+└── README.md                          # This file
 ```
 
 ## Setup
@@ -101,19 +103,23 @@ backend:
 
 ### 4. Initialize Pulumi Stack
 
-Create and configure a new stack (e.g., `dev`):
+Create and configure a new stack. Clustera uses four environments:
+- `development` - Development environment
+- `testing` - Testing/QA environment
+- `staging` - Pre-production staging
+- `prod` - Production environment
 
 ```bash
 # Login to S3 backend
 pulumi login s3://clustera-pulumi-state
 
-# Initialize a new stack
-pulumi stack init dev
+# Initialize a new stack (choose one: development, testing, staging, prod)
+pulumi stack init development
 
 # Copy example config and customize
-cp Pulumi.dev.yaml.example Pulumi.dev.yaml
+cp Pulumi.development.yaml.example Pulumi.development.yaml
 
-# Edit Pulumi.dev.yaml with your actual values
+# Edit Pulumi.development.yaml with your actual values
 # - Aiven project name and Kafka service name
 # - GCP project ID and region
 ```
@@ -210,16 +216,30 @@ pulumi destroy
 
 ## Multiple Environments
 
-To manage multiple environments (dev, staging, prod):
+Clustera uses four environments: development, testing, staging, and prod.
+
+To set up additional stacks:
 
 ```bash
+# Create testing stack
+pulumi stack init testing
+cp Pulumi.testing.yaml.example Pulumi.testing.yaml
+# Edit Pulumi.testing.yaml with testing values
+
+# Create staging stack
+pulumi stack init staging
+cp Pulumi.staging.yaml.example Pulumi.staging.yaml
+# Edit Pulumi.staging.yaml with staging values
+
 # Create production stack
 pulumi stack init prod
 cp Pulumi.prod.yaml.example Pulumi.prod.yaml
 # Edit Pulumi.prod.yaml with production values
 
 # Switch between stacks
-pulumi stack select dev
+pulumi stack select development
+pulumi stack select testing
+pulumi stack select staging
 pulumi stack select prod
 
 # List all stacks
@@ -319,12 +339,27 @@ jobs:
       - uses: pulumi/actions@v5
         with:
           command: preview
-          stack-name: dev
+          stack-name: development
           work-dir: .
 
-  deploy:
+  deploy-staging:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+      - run: uv sync
+      - uses: pulumi/actions@v5
+        with:
+          command: up
+          stack-name: staging
+          work-dir: .
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3

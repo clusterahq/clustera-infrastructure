@@ -1,0 +1,12 @@
+config:
+  # Aiven Configuration
+  clustera-infrastructure:aiven_project: your-aiven-project-name-testing
+  clustera-infrastructure:kafka_service: your-kafka-service-name-testing
+
+  # GCP Configuration
+  clustera-infrastructure:gcp_project: your-gcp-project-id-testing
+  gcp:project: your-gcp-project-id-testing
+  gcp:region: us-central1
+
+  # AWS Configuration (for S3 backend)
+  aws:region: us-east-1
