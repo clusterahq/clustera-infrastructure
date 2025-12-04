@@ -60,9 +60,11 @@ cp .env.example .env
 Edit `.env` with your actual credentials:
 - **R2 credentials** - Cloudflare R2 access key and secret for state storage
 - **R2 endpoint** - Your Cloudflare account's R2 endpoint URL
-- **PULUMI_ACCESS_TOKEN** - From [Pulumi Cloud](https://app.pulumi.com/account/tokens) (optional, if using Pulumi Cloud)
+- **PULUMI_CONFIG_PASSPHRASE** - Passphrase for encrypting secrets in stack configs
 - **AIVEN_TOKEN** - Your Aiven API token
 - **GOOGLE_CREDENTIALS** - Path to your GCP service account key JSON
+
+> **Note:** `PULUMI_ACCESS_TOKEN` is NOT needed when using R2 backend. It's only required if you switch to Pulumi Cloud for state management.
 
 Load the environment variables:
 
@@ -349,12 +351,13 @@ on:
     branches: [main]
 
 env:
-  PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
   # R2 credentials for state backend
   AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
   AWS_REGION: auto
   AWS_ENDPOINT_URL_S3: ${{ secrets.R2_ENDPOINT_URL }}
+  # Secrets encryption passphrase
+  PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
   # Provider credentials
   AIVEN_TOKEN: ${{ secrets.AIVEN_TOKEN }}
   GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
@@ -409,9 +412,9 @@ For the CI/CD workflow to work, configure these secrets in your GitHub repositor
 1. **R2_ACCESS_KEY_ID** - Your Cloudflare R2 access key ID
 2. **R2_SECRET_ACCESS_KEY** - Your Cloudflare R2 secret access key
 3. **R2_ENDPOINT_URL** - Your R2 endpoint (e.g., `https://<account-id>.r2.cloudflarestorage.com`)
-4. **AIVEN_TOKEN** - Your Aiven API token
-5. **GCP_CREDENTIALS** - Your GCP service account JSON key (as string)
-6. **PULUMI_ACCESS_TOKEN** - Optional, if using Pulumi Cloud for state
+4. **PULUMI_CONFIG_PASSPHRASE** - Passphrase for encrypting/decrypting secrets in stack configs
+5. **AIVEN_TOKEN** - Your Aiven API token
+6. **GCP_CREDENTIALS** - Your GCP service account JSON key (as string)
 
 To add secrets:
 ```bash
@@ -419,6 +422,7 @@ To add secrets:
 gh secret set R2_ACCESS_KEY_ID --repo clusterahq/clustera-infrastructure
 gh secret set R2_SECRET_ACCESS_KEY --repo clusterahq/clustera-infrastructure
 gh secret set R2_ENDPOINT_URL --repo clusterahq/clustera-infrastructure
+gh secret set PULUMI_CONFIG_PASSPHRASE --repo clusterahq/clustera-infrastructure
 gh secret set AIVEN_TOKEN --repo clusterahq/clustera-infrastructure
 gh secret set GCP_CREDENTIALS < gcp-key.json --repo clusterahq/clustera-infrastructure
 ```
