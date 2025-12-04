@@ -19,18 +19,21 @@ Pulumi-based infrastructure as code for the Clustera platform. This project mana
 
 ```
 clustera-infrastructure/
-├── Pulumi.yaml                        # Project definition with S3 backend
+├── Pulumi.yaml                        # Project definition with R2 backend
 ├── Pulumi.development.yaml.example    # Example development stack config
 ├── Pulumi.testing.yaml.example        # Example testing stack config
 ├── Pulumi.staging.yaml.example        # Example staging stack config
 ├── Pulumi.prod.yaml.example           # Example production stack config
 ├── pyproject.toml                     # Python dependencies (uv)
 ├── Makefile                           # Helper commands for common tasks
+├── pulumi-login-r2.sh                 # Helper script for R2 backend login
 ├── __main__.py                        # Main Pulumi program entry point
 ├── infrastructure/                    # Infrastructure modules
 │   ├── __init__.py
 │   ├── kafka.py                       # Aiven Kafka topics
 │   └── pubsub.py                      # GCP Pub/Sub topics
+├── keys/                              # Local credential storage (gitignored)
+│   └── gcp/                           # GCP service account keys
 ├── .env.example                       # Environment variables template
 └── README.md                          # This file
 ```
@@ -85,13 +88,13 @@ Clustera uses Cloudflare R2 (S3-compatible storage) for Pulumi state. R2 offers 
 2. **Create a new bucket:**
    ```bash
    # Using Cloudflare dashboard or wrangler CLI:
-   npx wrangler r2 bucket create clustera-pulumi-state
+   npx wrangler r2 bucket create clustera-infrastructure-pulumi
    ```
 
 3. **Create R2 API Token:**
    - Go to R2 → Manage R2 API Tokens → Create API Token
    - Permissions: **Object Read & Write**
-   - Bucket: **clustera-pulumi-state** (or apply to all buckets)
+   - Bucket: **clustera-infrastructure-pulumi** (or apply to all buckets)
    - Save the **Access Key ID** and **Secret Access Key**
 
 #### Configure Environment for R2
@@ -117,11 +120,21 @@ AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
 Test that Pulumi can access R2:
 
 ```bash
-# Login to R2 backend
-pulumi login s3://clustera-pulumi-state
+# Make sure environment is loaded
+source .env
 
-# Should show: Logged in to ... as <your-user>
+# Login with endpoint in URL (recommended for R2)
+pulumi login "s3://clustera-infrastructure-pulumi?endpoint=2d45fcd3b3e68735a6ab3542fb494c19.r2.cloudflarestorage.com"
+
+# Or use the helper script
+./pulumi-login-r2.sh
+
+# Should show: Logged in to s3://clustera-infrastructure-pulumi
 ```
+
+**Important:** Replace `2d45fcd3b3e68735a6ab3542fb494c19` with your actual Cloudflare account ID.
+
+> **Note:** If login fails, ensure the R2 bucket exists: `npx wrangler r2 bucket create clustera-infrastructure-pulumi`
 
 Update `Pulumi.yaml` if you used a different bucket name:
 
@@ -138,29 +151,47 @@ Create and configure a new stack. Clustera uses four environments:
 - `staging` - Pre-production staging
 - `prod` - Production environment
 
+#### Option A: Using Make (Recommended)
+
+The `make init` command handles login and stack creation automatically:
+
 ```bash
-# Login to S3 backend
-pulumi login s3://clustera-pulumi-state
+# Initialize a new stack (handles R2 login automatically)
+make init
+# Enter stack name when prompted: development, testing, staging, or prod
 
-# Initialize a new stack (choose one: development, testing, staging, prod)
-pulumi stack init development
-
-# Copy example config and customize
-cp Pulumi.development.yaml.example Pulumi.development.yaml
-
-# Edit Pulumi.development.yaml with your actual values
-# - Aiven project name and Kafka service name
-# - GCP project ID and region
+# The script will:
+# 1. Check .env exists and load credentials
+# 2. Login to R2 backend (creates bucket if needed)
+# 3. Initialize the stack
+# 4. Show next steps
 ```
 
-Configure the stack:
+#### Option B: Manual Setup
 
 ```bash
-# Set Aiven configuration
+# Source environment
+source .env
+
+# Login to R2 backend
+pulumi login "s3://clustera-infrastructure-pulumi?endpoint=2d45fcd3b3e68735a6ab3542fb494c19.r2.cloudflarestorage.com"
+
+# Initialize a new stack
+pulumi stack init development
+```
+
+#### Configure the Stack
+
+After initialization, configure your stack:
+
+```bash
+# Copy example config and customize
+cp Pulumi.development.yaml.example Pulumi.development.yaml
+# Edit Pulumi.development.yaml with your actual values
+
+# Or set config values via CLI
 pulumi config set aiven_project your-aiven-project-name
 pulumi config set kafka_service your-kafka-service-name
-
-# Set GCP configuration
 pulumi config set gcp_project your-gcp-project-id
 pulumi config set gcp:project your-gcp-project-id
 pulumi config set gcp:region us-central1
@@ -348,7 +379,7 @@ export AWS_REGION=auto
 export AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
 
 # Test R2 access
-pulumi login s3://clustera-pulumi-state
+pulumi login s3://clustera-infrastructure-pulumi
 ```
 
 ### Missing Resources

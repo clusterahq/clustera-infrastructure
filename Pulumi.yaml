@@ -5,4 +5,4 @@ runtime:
     toolchain: uv
 description: Infrastructure for Clustera platform - Kafka topics in Aiven and GCP Pub/Sub
 backend:
-  url: s3://clustera-pulumi-state
+  url: s3://clustera-infrastructure-pulumi?endpoint=2d45fcd3b3e68735a6ab3542fb494c19.r2.cloudflarestorage.com

@@ -7,7 +7,7 @@ help:
 	@echo ""
 	@echo "Setup:"
 	@echo "  make install          Install dependencies with uv"
-	@echo "  make init             Initialize Pulumi stack"
+	@echo "  make init             Initialize Pulumi stack (handles R2 login + stack creation)"
 	@echo ""
 	@echo "Stack Selection:"
 	@echo "  make select-dev       Select development stack"
@@ -31,15 +31,45 @@ install:
 
 init:
 	@echo "Initializing Pulumi stack..."
+	@if [ ! -f .env ]; then \
+		echo "❌ Error: .env file not found!"; \
+		echo "Please create .env from .env.example first:"; \
+		echo "  cp .env.example .env"; \
+		echo "  # Edit .env with your credentials"; \
+		exit 1; \
+	fi
+	@echo ""
 	@echo "Please ensure you have:"
-	@echo "  1. Created .env from .env.example"
-	@echo "  2. Set up S3 bucket for state storage"
-	@echo "  3. Configured stack YAML (Pulumi.<stack>.yaml)"
+	@echo "  1. ✅ .env file configured with R2 credentials"
+	@echo "  2. 📦 R2 bucket created (will check automatically)"
+	@echo "  3. 📝 Stack config YAML ready (Pulumi.<stack>.yaml)"
 	@echo ""
 	@echo "Available environments: development, testing, staging, prod"
 	@read -p "Enter stack name: " stack; \
-	pulumi login s3://clustera-pulumi-state && \
-	pulumi stack init $$stack
+	echo ""; \
+	echo "🔐 Logging in to R2 backend..."; \
+	set -a; source .env; set +a; \
+	if ! pulumi login "s3://clustera-infrastructure-pulumi?endpoint=2d45fcd3b3e68735a6ab3542fb494c19.r2.cloudflarestorage.com" 2>/dev/null; then \
+		echo ""; \
+		echo "⚠️  Login failed. Creating R2 bucket..."; \
+		npx wrangler r2 bucket create clustera-infrastructure-pulumi || true; \
+		echo ""; \
+		echo "🔄 Retrying login..."; \
+		pulumi login "s3://clustera-infrastructure-pulumi?endpoint=2d45fcd3b3e68735a6ab3542fb494c19.r2.cloudflarestorage.com"; \
+	fi && \
+	echo "✅ Logged in to R2 backend" && \
+	echo "" && \
+	echo "📚 Creating stack: $$stack" && \
+	pulumi stack init $$stack && \
+	echo "" && \
+	echo "🎉 Stack '$$stack' initialized successfully!" && \
+	echo "" && \
+	echo "Next steps:" && \
+	echo "  1. Copy stack config: cp Pulumi.$$stack.yaml.example Pulumi.$$stack.yaml" && \
+	echo "  2. Edit config: vim Pulumi.$$stack.yaml" && \
+	echo "  3. Configure stack: pulumi config set <key> <value>" && \
+	echo "  4. Preview changes: make preview" && \
+	echo "  5. Deploy: make up"
 
 select-dev:
 	@echo "Selecting development stack..."
