@@ -52,3 +52,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Keys directory - ignore all files but keep directory structure
+keys/**/*
+!keys/**/
+!keys/**/.gitkeep
