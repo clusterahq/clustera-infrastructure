@@ -117,7 +117,7 @@ jobs:
         id: stack
         run: |
           case "${{ github.ref_name }}" in
-            main) echo "stack=production" >> $GITHUB_OUTPUT ;;
+            main) echo "stack=prod" >> $GITHUB_OUTPUT ;;
             development) echo "stack=development" >> $GITHUB_OUTPUT ;;
             staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
             testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
