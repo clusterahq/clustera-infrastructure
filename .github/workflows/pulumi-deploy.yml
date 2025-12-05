@@ -53,23 +53,16 @@ jobs:
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
-      - name: Configure environment variables
-        env:
-          STACK: ${{ steps.stack.outputs.stack }}
-        run: |
-          echo "AIVEN_TOKEN=${{ secrets.AIVEN_TOKEN }}" >> $GITHUB_ENV
-          echo "PULUMI_CONFIG_PASSPHRASE=${{ secrets.PULUMI_CONFIG_PASSPHRASE }}" >> $GITHUB_ENV
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-          echo "AWS_ENDPOINT_URL_S3=${{ secrets.AWS_ENDPOINT_URL_S3 }}" >> $GITHUB_ENV
-          echo "AWS_REGION=auto" >> $GITHUB_ENV
-
       - name: Configure GCP credentials
         run: |
           echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > /tmp/gcp-key.json
-          echo "GOOGLE_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
 
       - name: Pulumi login to R2 backend
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL_S3: ${{ secrets.AWS_ENDPOINT_URL_S3 }}
+          AWS_REGION: auto
         run: |
           uv run pulumi login "s3://clustera-infrastructure-pulumi?endpoint=${{ secrets.AWS_ENDPOINT_URL_S3 }}"
 
@@ -82,6 +75,13 @@ jobs:
           comment-on-summary: true
         env:
           PULUMI_ACCESS_TOKEN: ""  # Not needed with R2 backend
+          AIVEN_TOKEN: ${{ secrets.AIVEN_TOKEN }}
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL_S3: ${{ secrets.AWS_ENDPOINT_URL_S3 }}
+          AWS_REGION: auto
+          GOOGLE_CREDENTIALS: /tmp/gcp-key.json
 
   deploy:
     name: Pulumi Deploy
@@ -124,23 +124,16 @@ jobs:
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
-      - name: Configure environment variables
-        env:
-          STACK: ${{ steps.stack.outputs.stack }}
-        run: |
-          echo "AIVEN_TOKEN=${{ secrets.AIVEN_TOKEN }}" >> $GITHUB_ENV
-          echo "PULUMI_CONFIG_PASSPHRASE=${{ secrets.PULUMI_CONFIG_PASSPHRASE }}" >> $GITHUB_ENV
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
-          echo "AWS_ENDPOINT_URL_S3=${{ secrets.AWS_ENDPOINT_URL_S3 }}" >> $GITHUB_ENV
-          echo "AWS_REGION=auto" >> $GITHUB_ENV
-
       - name: Configure GCP credentials
         run: |
           echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > /tmp/gcp-key.json
-          echo "GOOGLE_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
 
       - name: Pulumi login to R2 backend
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL_S3: ${{ secrets.AWS_ENDPOINT_URL_S3 }}
+          AWS_REGION: auto
         run: |
           uv run pulumi login "s3://clustera-infrastructure-pulumi?endpoint=${{ secrets.AWS_ENDPOINT_URL_S3 }}"
 
@@ -152,6 +145,13 @@ jobs:
           upsert: false  # Fail if stack doesn't exist
         env:
           PULUMI_ACCESS_TOKEN: ""  # Not needed with R2 backend
+          AIVEN_TOKEN: ${{ secrets.AIVEN_TOKEN }}
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL_S3: ${{ secrets.AWS_ENDPOINT_URL_S3 }}
+          AWS_REGION: auto
+          GOOGLE_CREDENTIALS: /tmp/gcp-key.json
 
       - name: Export stack outputs
         if: success()
