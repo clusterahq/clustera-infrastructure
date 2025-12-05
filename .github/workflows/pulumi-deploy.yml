@@ -1,0 +1,177 @@
+name: Pulumi Deploy
+
+on:
+  push:
+    branches:
+      - main          # Deploy to production
+      - development   # Deploy to development
+      - staging       # Deploy to staging
+      - testing       # Deploy to testing
+  pull_request:
+    branches:
+      - main
+      - development
+      - staging
+      - testing
+
+jobs:
+  preview:
+    name: Pulumi Preview
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Determine stack from target branch
+        id: stack
+        run: |
+          case "${{ github.base_ref }}" in
+            main) echo "stack=production" >> $GITHUB_OUTPUT ;;
+            development) echo "stack=development" >> $GITHUB_OUTPUT ;;
+            staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
+            testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
+            *) echo "stack=development" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Configure environment variables
+        env:
+          STACK: ${{ steps.stack.outputs.stack }}
+        run: |
+          echo "AIVEN_TOKEN=${{ secrets.AIVEN_TOKEN }}" >> $GITHUB_ENV
+          echo "PULUMI_CONFIG_PASSPHRASE=${{ secrets.PULUMI_CONFIG_PASSPHRASE }}" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "AWS_ENDPOINT_URL_S3=${{ secrets.AWS_ENDPOINT_URL_S3 }}" >> $GITHUB_ENV
+          echo "AWS_REGION=auto" >> $GITHUB_ENV
+
+      - name: Configure GCP credentials
+        run: |
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > /tmp/gcp-key.json
+          echo "GOOGLE_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+
+      - name: Pulumi login to R2 backend
+        run: |
+          uv run pulumi login "s3://clustera-infrastructure-pulumi?endpoint=${{ secrets.AWS_ENDPOINT_URL_S3 }}"
+
+      - name: Pulumi preview
+        uses: pulumi/actions@v5
+        with:
+          command: preview
+          stack-name: ${{ steps.stack.outputs.stack }}
+          comment-on-pr: true
+          comment-on-summary: true
+        env:
+          PULUMI_ACCESS_TOKEN: ""  # Not needed with R2 backend
+
+  deploy:
+    name: Pulumi Deploy
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Determine stack from branch
+        id: stack
+        run: |
+          case "${{ github.ref_name }}" in
+            main) echo "stack=production" >> $GITHUB_OUTPUT ;;
+            development) echo "stack=development" >> $GITHUB_OUTPUT ;;
+            staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
+            testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
+            *) echo "stack=development" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Determine environment (for approval gates)
+        id: environment
+        run: |
+          case "${{ steps.stack.outputs.stack }}" in
+            production) echo "name=production" >> $GITHUB_OUTPUT ;;
+            staging) echo "name=staging" >> $GITHUB_OUTPUT ;;
+            testing) echo "name=testing" >> $GITHUB_OUTPUT ;;
+            development) echo "name=development" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Configure environment variables
+        env:
+          STACK: ${{ steps.stack.outputs.stack }}
+        run: |
+          echo "AIVEN_TOKEN=${{ secrets.AIVEN_TOKEN }}" >> $GITHUB_ENV
+          echo "PULUMI_CONFIG_PASSPHRASE=${{ secrets.PULUMI_CONFIG_PASSPHRASE }}" >> $GITHUB_ENV
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> $GITHUB_ENV
+          echo "AWS_ENDPOINT_URL_S3=${{ secrets.AWS_ENDPOINT_URL_S3 }}" >> $GITHUB_ENV
+          echo "AWS_REGION=auto" >> $GITHUB_ENV
+
+      - name: Configure GCP credentials
+        run: |
+          echo "${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}" > /tmp/gcp-key.json
+          echo "GOOGLE_CREDENTIALS=/tmp/gcp-key.json" >> $GITHUB_ENV
+
+      - name: Pulumi login to R2 backend
+        run: |
+          uv run pulumi login "s3://clustera-infrastructure-pulumi?endpoint=${{ secrets.AWS_ENDPOINT_URL_S3 }}"
+
+      - name: Pulumi up
+        uses: pulumi/actions@v5
+        with:
+          command: up
+          stack-name: ${{ steps.stack.outputs.stack }}
+          upsert: false  # Fail if stack doesn't exist
+        env:
+          PULUMI_ACCESS_TOKEN: ""  # Not needed with R2 backend
+        # Use GitHub Environment for approval gates
+        environment:
+          name: ${{ steps.environment.outputs.name }}
+
+      - name: Export stack outputs
+        if: success()
+        run: |
+          uv run pulumi stack output --json > stack-outputs.json
+          echo "Stack outputs saved to stack-outputs.json"
+
+      - name: Upload stack outputs as artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulumi-outputs-${{ steps.stack.outputs.stack }}
+          path: stack-outputs.json
+          retention-days: 30

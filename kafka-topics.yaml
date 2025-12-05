@@ -29,8 +29,7 @@ topics:
   - name: "{stack}-integrations-inbound-connection-dlq"
   - name: "{stack}-integrations-outbound-data-dlq"
   - name: "{stack}-integrations-errors-dlq"
-
-
+  - name: "{stack}-test-topic"
 
 
 
