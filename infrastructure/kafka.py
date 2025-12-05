@@ -81,12 +81,15 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
         cleanup_policy = topic_def.get("cleanup_policy", DEFAULT_TOPIC_CONFIG["cleanup_policy"])
         compression_type = topic_def.get("compression_type", DEFAULT_TOPIC_CONFIG["compression_type"])
 
-        # Full topic name with stack suffix
-        full_topic_name = f"clustera.{topic_name}.{stack}"
+        # Apply template substitution for {stack} variable in topic name
+        full_topic_name = topic_name.replace("{stack}", stack)
+
+        # Generate Pulumi resource name (sanitized, no dots or special chars)
+        resource_name = full_topic_name.replace(".", "-").replace("_", "-")
 
         # Create the topic
         topic = aiven.KafkaTopic(
-            f"clustera-{topic_name}-topic",
+            f"clustera-{resource_name}-topic",
             project=aiven_project,
             service_name=kafka_service,
             topic_name=full_topic_name,
