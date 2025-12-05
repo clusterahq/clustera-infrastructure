@@ -1,0 +1,9 @@
+config:
+  # Aiven Configuration
+  clustera-infrastructure:aiven_project: clustera-creators
+  clustera-infrastructure:kafka_service: kafka-clustera
+  # GCP Configuration
+  clustera-infrastructure:gcp_project: clustera-data-plane
+  gcp:project: clustera-data-plane
+  gcp:region: us-central1
+encryptionsalt: v1:hh4UsEeuHuQ=:v1:T/zmZj1G3ZJc213+:DC4f3Qolv6siyyo6jxFcBL4nTosJAg==

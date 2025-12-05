@@ -32,7 +32,8 @@ uv.lock
 
 # Pulumi
 .pulumi/
-Pulumi.*.yaml
+# Note: Stack configs are now committed to allow CI/CD to work
+# Secrets are encrypted with PULUMI_CONFIG_PASSPHRASE
 !Pulumi.yaml
 
 # Environment variables
