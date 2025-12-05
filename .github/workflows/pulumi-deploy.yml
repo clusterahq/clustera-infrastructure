@@ -92,6 +92,10 @@ jobs:
       contents: read
       id-token: write
 
+    # Dynamically set environment based on branch
+    environment:
+      name: ${{ github.ref_name == 'main' && 'production' || (github.ref_name == 'staging' && 'staging' || (github.ref_name == 'testing' && 'testing' || 'development')) }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -118,16 +122,6 @@ jobs:
             staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
             testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
-          esac
-
-      - name: Determine environment (for approval gates)
-        id: environment
-        run: |
-          case "${{ steps.stack.outputs.stack }}" in
-            production) echo "name=production" >> $GITHUB_OUTPUT ;;
-            staging) echo "name=staging" >> $GITHUB_OUTPUT ;;
-            testing) echo "name=testing" >> $GITHUB_OUTPUT ;;
-            development) echo "name=development" >> $GITHUB_OUTPUT ;;
           esac
 
       - name: Configure environment variables
@@ -158,9 +152,6 @@ jobs:
           upsert: false  # Fail if stack doesn't exist
         env:
           PULUMI_ACCESS_TOKEN: ""  # Not needed with R2 backend
-        # Use GitHub Environment for approval gates
-        environment:
-          name: ${{ steps.environment.outputs.name }}
 
       - name: Export stack outputs
         if: success()
