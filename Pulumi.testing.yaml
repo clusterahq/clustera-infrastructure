@@ -6,3 +6,4 @@ config:
   clustera-infrastructure:gcp_project: clustera-data-plane
   gcp:project: clustera-data-plane
   gcp:region: us-central1
+encryptionsalt: v1:4QINlrj3++g=:v1:qktDICrg6gGvq0zo:E2gHKPlToVeY/9QNivbXZ3XwcjF/Og==
