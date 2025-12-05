@@ -2,7 +2,6 @@ config:
   # Aiven Configuration
   clustera-infrastructure:aiven_project: clustera-creators
   clustera-infrastructure:kafka_service: kafka-clustera
-
   # GCP Configuration
   clustera-infrastructure:gcp_project: clustera-data-plane
   gcp:project: clustera-data-plane

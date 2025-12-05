@@ -332,6 +332,114 @@ pulumi stack select prod
 pulumi stack ls
 ```
 
+## Deployment & Branch Strategy
+
+### Branch to Environment Mapping
+
+Each Git branch maps directly to a Pulumi stack (environment):
+
+| Branch | Stack | Environment | Auto-Deploy |
+|--------|-------|-------------|-------------|
+| `main` | `prod` | Production | Yes (with approval) |
+| `staging` | `staging` | Staging | Yes |
+| `testing` | `testing` | Testing/QA | Yes |
+| `development` | `development` | Development | Yes |
+
+### Deployment Flow
+
+```mermaid
+flowchart TD
+    subgraph "Developer Workflow"
+        A[Create Feature Branch] --> B[Make Changes]
+        B --> C[Open Pull Request]
+    end
+
+    subgraph "Pull Request"
+        C --> D{PR Target Branch?}
+        D -->|main| E1[Preview against prod]
+        D -->|staging| E2[Preview against staging]
+        D -->|testing| E3[Preview against testing]
+        D -->|development| E4[Preview against development]
+        E1 & E2 & E3 & E4 --> F[Review PR + Preview Output]
+        F --> G[Merge PR]
+    end
+
+    subgraph "Automatic Deployment"
+        G --> H{Merged to which branch?}
+        H -->|main| I1[Deploy to prod]
+        H -->|staging| I2[Deploy to staging]
+        H -->|testing| I3[Deploy to testing]
+        H -->|development| I4[Deploy to development]
+        I1 --> J1[Requires Approval]
+        J1 --> K1[Production Updated]
+        I2 --> K2[Staging Updated]
+        I3 --> K3[Testing Updated]
+        I4 --> K4[Development Updated]
+    end
+
+    subgraph "State Management"
+        K1 & K2 & K3 & K4 --> L[State saved to R2]
+        L --> M[Stack outputs exported]
+    end
+```
+
+### CI/CD Workflow Jobs
+
+The GitHub Actions workflow (`.github/workflows/pulumi-deploy.yml`) has two jobs:
+
+#### 1. Preview Job (Pull Requests)
+- **Triggers**: When a PR is opened/updated targeting `main`, `staging`, `testing`, or `development`
+- **Action**: Runs `pulumi preview` (read-only, no changes applied)
+- **Output**: Posts preview results as a PR comment
+- **Stack Selection**: Based on the PR's **target branch** (`github.base_ref`)
+
+#### 2. Deploy Job (Push/Merge)
+- **Triggers**: When code is pushed/merged to `main`, `staging`, `testing`, or `development`
+- **Action**: Runs `pulumi up` to apply infrastructure changes
+- **Output**: Saves stack outputs as workflow artifact
+- **Stack Selection**: Based on the **current branch** (`github.ref_name`)
+- **Production Protection**: Deployments to `main` (prod) use GitHub Environments for approval gates
+
+### Environment Protection
+
+- **Production (`prod`)**: Resources are created with `protect=true` to prevent accidental deletion
+- **GitHub Environment**: Production deployments require manual approval via GitHub Environments
+- **All Environments**: Encrypted secrets in stack configs via `PULUMI_CONFIG_PASSPHRASE`
+
+### Typical Workflow Example
+
+```bash
+# 1. Create feature branch from development
+git checkout development
+git pull origin development
+git checkout -b feature/add-new-topic
+
+# 2. Make changes and push
+# ... edit kafka-topics.yaml or infrastructure code ...
+git add .
+git commit -m "Add new Kafka topic for user events"
+git push origin feature/add-new-topic
+
+# 3. Open PR to development branch
+# - CI runs pulumi preview against development stack
+# - Review the preview output in PR comments
+
+# 4. Merge PR to development
+# - CI automatically deploys to development stack
+
+# 5. Promote to staging (create PR from development to staging)
+git checkout staging
+git pull origin staging
+git merge development
+git push origin staging
+# - CI automatically deploys to staging stack
+
+# 6. Promote to production (create PR from staging to main)
+# - Open PR from staging to main
+# - CI runs preview against prod stack
+# - Merge triggers deployment (requires approval)
+```
+
 ## Resources Created
 
 ### Aiven Kafka
