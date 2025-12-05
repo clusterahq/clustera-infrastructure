@@ -4,14 +4,31 @@ import pulumi
 import pulumi_aiven as aiven
 
 
+# Default configuration for Kafka topics
+DEFAULT_TOPIC_CONFIG = {
+    "partitions": 5,
+    "replication": 2,
+    "retention_ms": "259200000",  # 3 days
+    "retention_bytes": "5368709120",  # 5GB
+    "cleanup_policy": "delete",
+    "compression_type": "snappy",
+}
+
+
 def create_kafka_resources(config: pulumi.Config) -> dict:
-    """Create Kafka topics in Aiven.
+    """Create Kafka topics in Aiven from YAML configuration.
+
+    Topics are defined in the stack config as a list under 'kafka_topics'.
+    Each topic requires a 'name' field, and can optionally override any
+    default configuration values.
 
     Args:
         config: Pulumi configuration object
 
     Returns:
-        Dictionary of created resources and outputs
+        Dictionary of created resources and outputs with keys:
+        - topics: List of topic resources
+        - topic_names: List of topic names
     """
     stack = pulumi.get_stack()
 
@@ -19,36 +36,71 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
     aiven_project = config.require("aiven_project")
     kafka_service = config.require("kafka_service")
 
-    # Sample Kafka topic
-    sample_topic = aiven.KafkaTopic(
-        "clustera-events-topic",
-        project=aiven_project,
-        service_name=kafka_service,
-        topic_name=f"clustera.events.{stack}",
-        partitions=3,
-        replication=2,
-        config={
-            "retention_ms": "604800000",  # 7 days
-            "cleanup_policy": "delete",
-            "compression_type": "snappy",
-        },
-        tags=[
-            aiven.KafkaTopicTagArgs(
-                key="environment",
-                value=stack,
-            ),
-            aiven.KafkaTopicTagArgs(
-                key="managed_by",
-                value="pulumi",
-            ),
-            aiven.KafkaTopicTagArgs(
-                key="platform",
-                value="clustera",
-            ),
-        ],
-    )
+    # Get topic list from configuration
+    topics_config = config.get_object("kafka_topics") or []
+
+    if not topics_config:
+        # If no topics configured, return empty results
+        return {
+            "topics": [],
+            "topic_names": [],
+        }
+
+    created_topics = []
+    topic_names = []
+
+    for idx, topic_def in enumerate(topics_config):
+        # Topic name is required
+        if not isinstance(topic_def, dict) or "name" not in topic_def:
+            raise ValueError(f"Topic at index {idx} must be a dict with 'name' field")
+
+        topic_name = topic_def["name"]
+
+        # Build configuration by merging defaults with overrides
+        partitions = topic_def.get("partitions", DEFAULT_TOPIC_CONFIG["partitions"])
+        replication = topic_def.get("replication", DEFAULT_TOPIC_CONFIG["replication"])
+        retention_ms = topic_def.get("retention_ms", DEFAULT_TOPIC_CONFIG["retention_ms"])
+        retention_bytes = topic_def.get("retention_bytes", DEFAULT_TOPIC_CONFIG["retention_bytes"])
+        cleanup_policy = topic_def.get("cleanup_policy", DEFAULT_TOPIC_CONFIG["cleanup_policy"])
+        compression_type = topic_def.get("compression_type", DEFAULT_TOPIC_CONFIG["compression_type"])
+
+        # Full topic name with stack suffix
+        full_topic_name = f"clustera.{topic_name}.{stack}"
+
+        # Create the topic
+        topic = aiven.KafkaTopic(
+            f"clustera-{topic_name}-topic",
+            project=aiven_project,
+            service_name=kafka_service,
+            topic_name=full_topic_name,
+            partitions=partitions,
+            replication=replication,
+            config={
+                "retention_ms": str(retention_ms),
+                "retention_bytes": str(retention_bytes),
+                "cleanup_policy": cleanup_policy,
+                "compression_type": compression_type,
+            },
+            tags=[
+                aiven.KafkaTopicTagArgs(
+                    key="environment",
+                    value=stack,
+                ),
+                aiven.KafkaTopicTagArgs(
+                    key="managed_by",
+                    value="pulumi",
+                ),
+                aiven.KafkaTopicTagArgs(
+                    key="platform",
+                    value="clustera",
+                ),
+            ],
+        )
+
+        created_topics.append(topic)
+        topic_names.append(topic.topic_name)
 
     return {
-        "topic": sample_topic,
-        "topic_name": sample_topic.topic_name,
+        "topics": created_topics,
+        "topic_names": topic_names,
     }

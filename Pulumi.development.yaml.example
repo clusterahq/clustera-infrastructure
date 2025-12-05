@@ -3,6 +3,19 @@ config:
   clustera-infrastructure:aiven_project: your-aiven-project-name-development
   clustera-infrastructure:kafka_service: your-kafka-service-name-development
 
+  # Kafka Topics Configuration
+  # Each topic requires 'name' field. All other fields are optional and override defaults.
+  # Defaults: partitions=5, replication=2, retention_ms=259200000 (3 days),
+  #           retention_bytes=5368709120 (5GB), cleanup_policy=delete, compression_type=snappy
+  clustera-infrastructure:kafka_topics:
+    - name: events  # Minimal config - creates: clustera.events.development
+    - name: commands  # Example with overrides
+      partitions: 10
+      replication: 3
+      retention_ms: "604800000"  # 7 days
+      retention_bytes: "10737418240"  # 10GB
+      compression_type: "lz4"
+
   # GCP Configuration
   clustera-infrastructure:gcp_project: your-gcp-project-id-development
   gcp:project: your-gcp-project-id-development
