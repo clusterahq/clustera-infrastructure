@@ -10,10 +10,10 @@ import yaml
 
 # Default configuration for Kafka topics
 DEFAULT_TOPIC_CONFIG = {
-    "partitions": 5,
+    "partitions": 1,
     "replication": 2,
     "retention_ms": "259200000",  # 3 days
-    "retention_bytes": "5368709120",  # 5GB
+    "retention_bytes": "524288000",  # 500MB
     "cleanup_policy": "delete",
     "compression_type": "snappy",
 }
