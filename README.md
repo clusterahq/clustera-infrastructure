@@ -1,627 +1,120 @@
 # Clustera Infrastructure
 
-Pulumi-based infrastructure as code for the Clustera platform. This project manages:
-- Aiven Kafka topics for event streaming
-- GCP Pub/Sub topics and subscriptions for notifications
+Infrastructure as code for the Clustera platform, managing Aiven Kafka topics and GCP Pub/Sub resources via Pulumi.
 
-## Prerequisites
+## How It Works
 
-- [Python 3.11+](https://www.python.org/downloads/)
-- [uv](https://github.com/astral-sh/uv) - Fast Python package installer
-- [Pulumi CLI](https://www.pulumi.com/docs/get-started/install/)
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (optional) - For R2 bucket management
-- Access to:
-  - Cloudflare account with R2 enabled
-  - Aiven account with API token
-  - GCP project with Pub/Sub API enabled
+- **Pulumi** manages infrastructure as Python code
+- **GitHub Actions** automatically deploys changes when you push
+- **Cloudflare R2** stores Pulumi state (no Pulumi Cloud account needed)
+- **Four environments**: development, testing, staging, prod
 
-## Project Structure
+## Deploying Changes
 
-```
-clustera-infrastructure/
-├── Pulumi.yaml                        # Project definition with R2 backend
-├── Pulumi.development.yaml.example    # Example development stack config
-├── Pulumi.testing.yaml.example        # Example testing stack config
-├── Pulumi.staging.yaml.example        # Example staging stack config
-├── Pulumi.prod.yaml.example           # Example production stack config
-├── kafka-topics.yaml                  # Kafka topics configuration (shared across all stacks)
-├── pyproject.toml                     # Python dependencies (uv)
-├── Makefile                           # Helper commands for common tasks
-├── pulumi-login-r2.sh                 # Helper script for R2 backend login
-├── __main__.py                        # Main Pulumi program entry point
-├── infrastructure/                    # Infrastructure modules
-│   ├── __init__.py
-│   ├── kafka.py                       # Aiven Kafka topics
-│   └── pubsub.py                      # GCP Pub/Sub topics
-├── keys/                              # Local credential storage (gitignored)
-│   └── gcp/                           # GCP service account keys
-├── .env.example                       # Environment variables template
-└── README.md                          # This file
-```
+All deployments happen through Git. Push to a branch, and GitHub Actions deploys to the corresponding environment.
 
-## Setup
+### Branch → Environment Mapping
 
-### 1. Install Dependencies
-
-```bash
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install Python dependencies
-uv sync
-# OR use the Makefile
-make install
-```
-
-### 2. Configure Environment Variables
-
-Copy the example environment file and fill in your credentials:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your actual credentials:
-- **R2 credentials** - Cloudflare R2 access key and secret for state storage
-- **R2 endpoint** - Your Cloudflare account's R2 endpoint URL
-- **PULUMI_CONFIG_PASSPHRASE** - Passphrase for encrypting secrets in stack configs
-- **AIVEN_TOKEN** - Your Aiven API token
-- **GOOGLE_CREDENTIALS** - Optional: Path to GCP service account key (see GCP auth options below)
-
-> **Note:** `PULUMI_ACCESS_TOKEN` is NOT needed when using R2 backend. It's only required if you switch to Pulumi Cloud for state management.
-
-Load the environment variables:
-
-```bash
-source .env  # or use direnv for automatic loading
-```
-
-### 3. Set Up R2 Backend for State Storage
-
-Clustera uses Cloudflare R2 (S3-compatible storage) for Pulumi state. R2 offers zero egress fees and is more cost-effective than AWS S3.
-
-#### Create R2 Bucket
-
-1. **Navigate to Cloudflare R2:**
-   - Go to https://dash.cloudflare.com
-   - Select your account → R2 → Overview
-
-2. **Create a new bucket:**
-   ```bash
-   # Using Cloudflare dashboard or wrangler CLI:
-   npx wrangler r2 bucket create clustera-infrastructure-pulumi
-   ```
-
-3. **Create R2 API Token:**
-   - Go to R2 → Manage R2 API Tokens → Create API Token
-   - Permissions: **Object Read & Write**
-   - Bucket: **clustera-infrastructure-pulumi** (or apply to all buckets)
-   - Save the **Access Key ID** and **Secret Access Key**
-
-#### Configure Environment for R2
-
-Update your `.env` file with R2 credentials:
-
-```bash
-# R2 Access Credentials
-AWS_ACCESS_KEY_ID=<your-r2-access-key-id>
-AWS_SECRET_ACCESS_KEY=<your-r2-secret-access-key>
-AWS_REGION=auto
-
-# R2 Endpoint - replace <account-id> with your Cloudflare account ID
-AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
-```
-
-**Finding your Account ID:**
-- In Cloudflare dashboard, it's in the URL: `dash.cloudflare.com/<account-id>/...`
-- Or check R2 overview page for the endpoint URL
-
-#### Verify R2 Configuration
-
-Test that Pulumi can access R2:
-
-```bash
-# Make sure environment is loaded
-source .env
-
-# Login with endpoint in URL (recommended for R2)
-pulumi login "s3://clustera-infrastructure-pulumi?endpoint=2d45fcd3b3e68735a6ab3542fb494c19.r2.cloudflarestorage.com"
-
-# Or use the helper script
-./pulumi-login-r2.sh
-
-# Should show: Logged in to s3://clustera-infrastructure-pulumi
-```
-
-**Important:** Replace `2d45fcd3b3e68735a6ab3542fb494c19` with your actual Cloudflare account ID.
-
-> **Note:** If login fails, ensure the R2 bucket exists: `npx wrangler r2 bucket create clustera-infrastructure-pulumi`
-
-Update `Pulumi.yaml` if you used a different bucket name:
-
-```yaml
-backend:
-  url: s3://your-r2-bucket-name
-```
-
-### 4. Initialize Pulumi Stack
-
-Create and configure a new stack. Clustera uses four environments:
-- `development` - Development environment
-- `testing` - Testing/QA environment
-- `staging` - Pre-production staging
-- `prod` - Production environment
-
-#### Option A: Using Make (Recommended)
-
-The `make init` command handles login and stack creation automatically:
-
-```bash
-# Initialize a new stack (handles R2 login automatically)
-make init
-# Enter stack name when prompted: development, testing, staging, or prod
-
-# The script will:
-# 1. Check .env exists and load credentials
-# 2. Login to R2 backend (creates bucket if needed)
-# 3. Initialize the stack
-# 4. Show next steps
-```
-
-#### Option B: Manual Setup
-
-```bash
-# Source environment
-source .env
-
-# Login to R2 backend
-pulumi login "s3://clustera-infrastructure-pulumi?endpoint=2d45fcd3b3e68735a6ab3542fb494c19.r2.cloudflarestorage.com"
-
-# Initialize a new stack
-pulumi stack init development
-```
-
-#### Configure the Stack
-
-After initialization, configure your stack:
-
-```bash
-# Copy example config and customize
-cp Pulumi.development.yaml.example Pulumi.development.yaml
-# Edit Pulumi.development.yaml with your actual values
-
-# Or set config values via CLI
-pulumi config set aiven_project your-aiven-project-name
-pulumi config set kafka_service your-kafka-service-name
-pulumi config set gcp_project your-gcp-project-id
-pulumi config set gcp:project your-gcp-project-id
-pulumi config set gcp:region us-central1
-```
-
-### 5. Set Up GCP Authentication
-
-You have two options for GCP authentication:
-
-#### Option A: User Account (Local Development)
-
-Easiest for local development - uses your personal GCP credentials:
-
-```bash
-# Authenticate with your GCP user account
-gcloud auth application-default login
-
-# No need to set GOOGLE_CREDENTIALS environment variable
-# Remove or comment it out in your .env file
-
-# Enable Pub/Sub API
-gcloud services enable pubsub.googleapis.com --project=your-gcp-project-id
-```
-
-**Required IAM roles for your user account:**
-- `roles/pubsub.admin` or `roles/pubsub.editor`
-
-#### Option B: Service Account (CI/CD & Production)
-
-Recommended for CI/CD pipelines and production deployments:
-
-```bash
-# Create a service account
-gcloud iam service-accounts create pulumi-infrastructure \
-  --display-name="Pulumi Infrastructure"
-
-# Grant necessary permissions
-gcloud projects add-iam-policy-binding your-gcp-project-id \
-  --member="serviceAccount:pulumi-infrastructure@your-project.iam.gserviceaccount.com" \
-  --role="roles/pubsub.admin"
-
-# Create and download key
-gcloud iam service-accounts keys create ~/gcp-pulumi-key.json \
-  --iam-account=pulumi-infrastructure@your-project.iam.gserviceaccount.com
-
-# Set in .env
-echo "GOOGLE_CREDENTIALS=$HOME/gcp-pulumi-key.json" >> .env
-```
-
-**When to use which:**
-- **Local dev:** User account (easier, no key management)
-- **CI/CD:** Service account (better security, auditing, lifecycle management)
-
-## Usage
-
-> **Tip:** Use `make help` to see all available Makefile commands for common tasks.
-
-### Preview Changes
-
-Preview infrastructure changes before applying:
-
-```bash
-pulumi preview
-# OR
-make preview
-```
-
-### Deploy Infrastructure
-
-Deploy the infrastructure:
-
-```bash
-pulumi up
-# OR
-make up
-```
-
-Review the changes and confirm when prompted.
-
-### View Outputs
-
-After deployment, view the stack outputs:
-
-```bash
-pulumi stack output
-
-# Or get specific output
-pulumi stack output kafka_topic_name
-pulumi stack output pubsub_topic_name
-```
-
-### Refresh State
-
-Sync Pulumi state with actual cloud resources:
-
-```bash
-pulumi refresh
-```
-
-### Destroy Infrastructure
-
-Remove all resources:
-
-```bash
-pulumi destroy
-```
-
-## Multiple Environments
-
-Clustera uses four environments: development, testing, staging, and prod.
-
-To set up additional stacks:
-
-```bash
-# Create testing stack
-pulumi stack init testing
-cp Pulumi.testing.yaml.example Pulumi.testing.yaml
-# Edit Pulumi.testing.yaml with testing values
-
-# Create staging stack
-pulumi stack init staging
-cp Pulumi.staging.yaml.example Pulumi.staging.yaml
-# Edit Pulumi.staging.yaml with staging values
-
-# Create production stack
-pulumi stack init prod
-cp Pulumi.prod.yaml.example Pulumi.prod.yaml
-# Edit Pulumi.prod.yaml with production values
-
-# Switch between stacks
-pulumi stack select development
-pulumi stack select testing
-pulumi stack select staging
-pulumi stack select prod
-
-# List all stacks
-pulumi stack ls
-```
-
-## Deployment & Branch Strategy
-
-### Branch to Environment Mapping
-
-Each Git branch maps directly to a Pulumi stack (environment):
-
-| Branch | Stack | Environment | Auto-Deploy |
-|--------|-------|-------------|-------------|
-| `main` | `prod` | Production | Yes (with approval) |
-| `staging` | `staging` | Staging | Yes |
-| `testing` | `testing` | Testing/QA | Yes |
-| `development` | `development` | Development | Yes |
+| Branch | Environment | Auto-Deploy |
+|--------|-------------|-------------|
+| `development` | development | Yes |
+| `testing` | testing | Yes |
+| `staging` | staging | Yes |
+| `main` | prod | Yes (requires approval) |
 
 ### Deployment Flow
 
 ```mermaid
-flowchart TD
-    subgraph "Developer Workflow"
-        A[Create Feature Branch] --> B[Make Changes]
-        B --> C[Open Pull Request]
+flowchart LR
+    subgraph "Your Workflow"
+        A[Edit files] --> B[Commit & Push]
     end
 
-    subgraph "Pull Request"
-        C --> D{PR Target Branch?}
-        D -->|main| E1[Preview against prod]
-        D -->|staging| E2[Preview against staging]
-        D -->|testing| E3[Preview against testing]
-        D -->|development| E4[Preview against development]
-        E1 & E2 & E3 & E4 --> F[Review PR + Preview Output]
-        F --> G[Merge PR]
+    subgraph "GitHub Actions"
+        B --> C{Branch?}
+        C -->|development| D1[Deploy to dev]
+        C -->|testing| D2[Deploy to testing]
+        C -->|staging| D3[Deploy to staging]
+        C -->|main| D4[Deploy to prod]
     end
 
-    subgraph "Automatic Deployment"
-        G --> H{Merged to which branch?}
-        H -->|main| I1[Deploy to prod]
-        H -->|staging| I2[Deploy to staging]
-        H -->|testing| I3[Deploy to testing]
-        H -->|development| I4[Deploy to development]
-        I1 --> J1[Requires Approval]
-        J1 --> K1[Production Updated]
-        I2 --> K2[Staging Updated]
-        I3 --> K3[Testing Updated]
-        I4 --> K4[Development Updated]
-    end
-
-    subgraph "State Management"
-        K1 & K2 & K3 & K4 --> L[State saved to R2]
-        L --> M[Stack outputs exported]
+    subgraph "Result"
+        D1 & D2 & D3 --> E[Infrastructure Updated]
+        D4 --> F[Approval Required]
+        F --> E
     end
 ```
 
-### CI/CD Workflow Jobs
+### Pull Requests
 
-The GitHub Actions workflow (`.github/workflows/pulumi-deploy.yml`) has two jobs:
+When you open a PR, GitHub Actions runs `pulumi preview` and posts the planned changes as a comment. Review the preview before merging.
 
-#### 1. Preview Job (Pull Requests)
-- **Triggers**: When a PR is opened/updated targeting `main`, `staging`, `testing`, or `development`
-- **Action**: Runs `pulumi preview` (read-only, no changes applied)
-- **Output**: Posts preview results as a PR comment
-- **Stack Selection**: Based on the PR's **target branch** (`github.base_ref`)
+## Making Changes
 
-#### 2. Deploy Job (Push/Merge)
-- **Triggers**: When code is pushed/merged to `main`, `staging`, `testing`, or `development`
-- **Action**: Runs `pulumi up` to apply infrastructure changes
-- **Output**: Saves stack outputs as workflow artifact
-- **Stack Selection**: Based on the **current branch** (`github.ref_name`)
-- **Production Protection**: Deployments to `main` (prod) use GitHub Environments for approval gates
+### Adding or Modifying Kafka Topics
 
-### Environment Protection
-
-- **Production (`prod`)**: Resources are created with `protect=true` to prevent accidental deletion
-- **GitHub Environment**: Production deployments require manual approval via GitHub Environments
-- **All Environments**: Encrypted secrets in stack configs via `PULUMI_CONFIG_PASSPHRASE`
-
-### Typical Workflow Example
-
-```bash
-# 1. Create feature branch from development
-git checkout development
-git pull origin development
-git checkout -b feature/add-new-topic
-
-# 2. Make changes and push
-# ... edit kafka-topics.yaml or infrastructure code ...
-git add .
-git commit -m "Add new Kafka topic for user events"
-git push origin feature/add-new-topic
-
-# 3. Open PR to development branch
-# - CI runs pulumi preview against development stack
-# - Review the preview output in PR comments
-
-# 4. Merge PR to development
-# - CI automatically deploys to development stack
-
-# 5. Promote to staging (create PR from development to staging)
-git checkout staging
-git pull origin staging
-git merge development
-git push origin staging
-# - CI automatically deploys to staging stack
-
-# 6. Promote to production (create PR from staging to main)
-# - Open PR from staging to main
-# - CI runs preview against prod stack
-# - Merge triggers deployment (requires approval)
-```
-
-## Resources Created
-
-### Aiven Kafka
-
-- **Topic Name**: `clustera.events.{stack}`
-- **Partitions**: 3
-- **Replication**: 2
-- **Retention**: 7 days
-- **Compression**: Snappy
-
-### GCP Pub/Sub
-
-- **Topic Name**: `clustera-notifications-{stack}`
-- **Subscription Name**: `clustera-notifications-sub-{stack}`
-- **Message Retention**: 7 days
-- **Ack Deadline**: 20 seconds
-
-## Troubleshooting
-
-### State Lock Issues
-
-If you encounter a state lock conflict:
-
-```bash
-pulumi cancel
-```
-
-### Authentication Errors
-
-**Aiven**: Ensure `AIVEN_TOKEN` is set correctly:
-```bash
-export AIVEN_TOKEN=your_token
-```
-
-**GCP**: Verify credentials are properly set:
-```bash
-export GOOGLE_CREDENTIALS=/path/to/key.json
-gcloud auth activate-service-account --key-file=$GOOGLE_CREDENTIALS
-```
-
-**R2 (State Backend)**: For R2 backend access:
-```bash
-export AWS_ACCESS_KEY_ID=your_r2_access_key
-export AWS_SECRET_ACCESS_KEY=your_r2_secret_key
-export AWS_REGION=auto
-export AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
-
-# Test R2 access
-pulumi login s3://clustera-infrastructure-pulumi
-```
-
-### Missing Resources
-
-If resources aren't created, check:
-1. Service quotas in GCP
-2. Aiven service is running
-3. Correct project IDs and service names in config
-
-### Import Existing Resources
-
-To import existing resources into Pulumi state:
-
-```bash
-pulumi import gcp:pubsub/topic:Topic clustera-notifications-topic projects/your-project/topics/topic-name
-```
-
-## CI/CD Integration
-
-Example GitHub Actions workflow (`.github/workflows/pulumi.yml`):
+Edit `kafka-topics.yaml`:
 
 ```yaml
-name: Pulumi Infrastructure
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-env:
-  # R2 credentials for state backend
-  AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-  AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-  AWS_REGION: auto
-  AWS_ENDPOINT_URL_S3: ${{ secrets.R2_ENDPOINT_URL }}
-  # Secrets encryption passphrase
-  PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
-  # Provider credentials
-  AIVEN_TOKEN: ${{ secrets.AIVEN_TOKEN }}
-  GOOGLE_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
-
-jobs:
-  preview:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync
-      - uses: pulumi/actions@v5
-        with:
-          command: preview
-          stack-name: development
-          work-dir: .
-
-  deploy-staging:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync
-      - uses: pulumi/actions@v5
-        with:
-          command: up
-          stack-name: staging
-          work-dir: .
-
-  deploy-prod:
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    needs: deploy-staging
-    environment: production
-    steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
-      - run: uv sync
-      - uses: pulumi/actions@v5
-        with:
-          command: up
-          stack-name: prod
-          work-dir: .
+topics:
+  - name: "{stack}-my-new-topic"        # {stack} is replaced with environment name
+    partitions: 5                        # optional, default: 5
+    retention_ms: "259200000"            # optional, default: 3 days
 ```
 
-### Required GitHub Secrets
+Defaults (if not specified):
+- Partitions: 5
+- Replication: 2
+- Retention: 3 days (259200000 ms)
+- Retention bytes: 5 GB
+- Compression: snappy
 
-For the CI/CD workflow to work, configure these secrets in your GitHub repository:
+### Adding New Infrastructure
 
-1. **R2_ACCESS_KEY_ID** - Your Cloudflare R2 access key ID
-2. **R2_SECRET_ACCESS_KEY** - Your Cloudflare R2 secret access key
-3. **R2_ENDPOINT_URL** - Your R2 endpoint (e.g., `https://<account-id>.r2.cloudflarestorage.com`)
-4. **PULUMI_CONFIG_PASSPHRASE** - Passphrase for encrypting/decrypting secrets in stack configs
-5. **AIVEN_TOKEN** - Your Aiven API token
-6. **GCP_CREDENTIALS** - Your GCP service account JSON key (as string)
+1. Create or edit modules in `infrastructure/`
+2. Import and call from `__main__.py`
+3. Commit and push
 
-To add secrets:
-```bash
-# Using GitHub CLI
-gh secret set R2_ACCESS_KEY_ID --repo clusterahq/clustera-infrastructure
-gh secret set R2_SECRET_ACCESS_KEY --repo clusterahq/clustera-infrastructure
-gh secret set R2_ENDPOINT_URL --repo clusterahq/clustera-infrastructure
-gh secret set PULUMI_CONFIG_PASSPHRASE --repo clusterahq/clustera-infrastructure
-gh secret set AIVEN_TOKEN --repo clusterahq/clustera-infrastructure
-gh secret set GCP_CREDENTIALS < gcp-key.json --repo clusterahq/clustera-infrastructure
+## Project Structure
+
+```
+├── __main__.py              # Pulumi entry point
+├── infrastructure/          # Infrastructure modules
+│   ├── kafka.py             # Aiven Kafka topics
+│   └── pubsub.py            # GCP Pub/Sub (currently disabled)
+├── kafka-topics.yaml        # Kafka topic definitions
+├── Pulumi.yaml              # Pulumi project config
+└── Pulumi.{env}.yaml        # Per-environment settings
 ```
 
-Or via GitHub web interface: **Settings → Secrets and variables → Actions → New repository secret**
-
-## Development
-
-### Add New Resources
-
-1. Create a new module in `infrastructure/`
-2. Import and use in `__main__.py`
-3. Update this README
-
-### Testing
+## Promoting Changes
 
 ```bash
-# Install dev dependencies
-uv sync --extra dev
+# Deploy to development
+git checkout development
+git pull && git merge feature/my-change
+git push
 
-# Run tests (when available)
-pytest
+# Promote to staging
+git checkout staging
+git pull && git merge development
+git push
+
+# Promote to production
+git checkout main
+git pull && git merge staging
+git push
+# → Requires approval in GitHub
 ```
 
-## Support
+## Environment Protection
 
-For issues or questions:
-- Pulumi: https://www.pulumi.com/docs/
-- Aiven: https://docs.aiven.io/
-- GCP Pub/Sub: https://cloud.google.com/pubsub/docs
+- **Production resources** have deletion protection enabled
+- **Production deploys** require manual approval via GitHub Environments
+- **All secrets** are encrypted in stack configs
 
-## License
+## Documentation
 
-[Your License Here]
+- [Initial Setup](docs/setup.md) - One-time setup for R2, Aiven, GCP, and GitHub secrets
+- [Local Development](docs/local-development.md) - Running Pulumi commands locally
+- [CI/CD Workflow](.github/workflows/README.md) - Detailed workflow documentation
