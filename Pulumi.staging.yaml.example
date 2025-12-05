@@ -3,14 +3,6 @@ config:
   clustera-infrastructure:aiven_project: your-aiven-project-name-staging
   clustera-infrastructure:kafka_service: your-kafka-service-name-staging
 
-  # Kafka Topics Configuration
-  # Each topic requires 'name' field. All other fields are optional and override defaults.
-  # Defaults: partitions=5, replication=2, retention_ms=259200000 (3 days),
-  #           retention_bytes=5368709120 (5GB), cleanup_policy=delete, compression_type=snappy
-  clustera-infrastructure:kafka_topics:
-    - name: events
-    - name: commands
-
   # GCP Configuration
   clustera-infrastructure:gcp_project: your-gcp-project-id-staging
   gcp:project: your-gcp-project-id-staging

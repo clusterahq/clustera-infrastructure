@@ -24,6 +24,7 @@ clustera-infrastructure/
 ├── Pulumi.testing.yaml.example        # Example testing stack config
 ├── Pulumi.staging.yaml.example        # Example staging stack config
 ├── Pulumi.prod.yaml.example           # Example production stack config
+├── kafka-topics.yaml                  # Kafka topics configuration (shared across all stacks)
 ├── pyproject.toml                     # Python dependencies (uv)
 ├── Makefile                           # Helper commands for common tasks
 ├── pulumi-login-r2.sh                 # Helper script for R2 backend login

@@ -1,0 +1,17 @@
+# Kafka Topics Configuration
+# This file defines all Kafka topics created across all environments.
+# Topics are automatically suffixed with the stack name: clustera.{name}.{stack}
+#
+# Each topic requires 'name' field. All other fields are optional and override defaults.
+# Defaults: partitions=5, replication=2, retention_ms=259200000 (3 days),
+#           retention_bytes=5368709120 (5GB), cleanup_policy=delete, compression_type=snappy
+
+topics:
+  - name: events
+    # Uses all defaults: 5 partitions, 3-day/5GB retention, snappy compression
+
+  - name: commands
+    # Example with custom configuration
+    partitions: 10
+    retention_ms: "604800000"  # 7 days
+    retention_bytes: "10737418240"  # 10GB

@@ -1,7 +1,11 @@
 """Aiven Kafka topic resources."""
 
+import os
+from pathlib import Path
+
 import pulumi
 import pulumi_aiven as aiven
+import yaml
 
 
 # Default configuration for Kafka topics
@@ -18,7 +22,8 @@ DEFAULT_TOPIC_CONFIG = {
 def create_kafka_resources(config: pulumi.Config) -> dict:
     """Create Kafka topics in Aiven from YAML configuration.
 
-    Topics are defined in the stack config as a list under 'kafka_topics'.
+    Topics are defined in kafka-topics.yaml at the project root.
+    This file is shared across all environments/stacks.
     Each topic requires a 'name' field, and can optionally override any
     default configuration values.
 
@@ -36,8 +41,20 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
     aiven_project = config.require("aiven_project")
     kafka_service = config.require("kafka_service")
 
-    # Get topic list from configuration
-    topics_config = config.get_object("kafka_topics") or []
+    # Load topics from shared YAML file
+    topics_file = Path(__file__).parent.parent / "kafka-topics.yaml"
+
+    if not topics_file.exists():
+        pulumi.log.warn(f"kafka-topics.yaml not found at {topics_file}, no topics will be created")
+        return {
+            "topics": [],
+            "topic_names": [],
+        }
+
+    with open(topics_file, "r") as f:
+        topics_data = yaml.safe_load(f)
+
+    topics_config = topics_data.get("topics", [])
 
     if not topics_config:
         # If no topics configured, return empty results
