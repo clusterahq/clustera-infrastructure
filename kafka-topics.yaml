@@ -9,26 +9,26 @@
 #           retention_bytes=5368709120 (5GB), cleanup_policy=delete, compression_type=snappy
 #
 # Examples:
-#   name: "clustera.events.{stack}"        → clustera.events.development
-#   name: "app.{stack}.commands"           → app.development.commands
-#   name: "logs-{stack}"                   → logs-development
+#   name: "clustera.events"        → clustera.events.development
+#   name: "app.commands"           → app.development.commands
+#   name: "{stack}-logs"                   → logs-development
 
 topics:
 ## Integrations
-  - name: integrations-inbound-webhook.{stack}
-  - name: integrations-inbound-trigger.{stack}
-  - name: integrations-inbound-connection.{stack}
-  - name: integrations-outbound-data.{stack}
-  - name: integrations-errors.{stack}
-  - name: integrations-worker-circle.{stack}
-  - name: integrations-worker-gmail.{stack}
-  - name: integrations-worker-google-drive.{stack}
-  - name: integrations-worker-slack.{stack}
-  - name: integrations-inbound-webhook-dlq.{stack}
-  - name: integrations-inbound-trigger-dlq.{stack}
-  - name: integrations-inbound-connection-dlq.{stack}
-  - name: integrations-outbound-data-dlq.{stack}
-  - name: integrations-errors-dlq.{stack}
+  - name: "{stack}-integrations-inbound-webhook"
+  - name: "{stack}-integrations-inbound-trigger"
+  - name: "{stack}-integrations-inbound-connection"
+  - name: "{stack}-integrations-outbound-data"
+  - name: "{stack}-integrations-errors"
+  - name: "{stack}-integrations-worker-circle"
+  - name: "{stack}-integrations-worker-gmail"
+  - name: "{stack}-integrations-worker-google-drive"
+  - name: "{stack}-integrations-worker-slack"
+  - name: "{stack}-integrations-inbound-webhook-dlq"
+  - name: "{stack}-integrations-inbound-trigger-dlq"
+  - name: "{stack}-integrations-inbound-connection-dlq"
+  - name: "{stack}-integrations-outbound-data-dlq"
+  - name: "{stack}-integrations-errors-dlq"
 
 
 

@@ -87,6 +87,9 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
         # Generate Pulumi resource name (sanitized, no dots or special chars)
         resource_name = full_topic_name.replace(".", "-").replace("_", "-")
 
+        # Protect production resources from accidental deletion
+        is_production = stack in ["production", "prod"]
+
         # Create the topic
         topic = aiven.KafkaTopic(
             f"clustera-{resource_name}-topic",
@@ -115,6 +118,7 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
                     value="clustera",
                 ),
             ],
+            opts=pulumi.ResourceOptions(protect=is_production),
         )
 
         created_topics.append(topic)
