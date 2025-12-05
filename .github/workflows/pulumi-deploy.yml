@@ -137,6 +137,21 @@ jobs:
         run: |
           uv run pulumi login "s3://clustera-infrastructure-pulumi?endpoint=${{ secrets.AWS_ENDPOINT_URL_S3 }}"
 
+      - name: Select stack and configure
+        env:
+          PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_CONFIG_PASSPHRASE }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ENDPOINT_URL_S3: ${{ secrets.AWS_ENDPOINT_URL_S3 }}
+          AWS_REGION: auto
+        run: |
+          uv run pulumi stack select ${{ steps.stack.outputs.stack }}
+          uv run pulumi config set clustera-infrastructure:aiven_project ${{ secrets.AIVEN_PROJECT }}
+          uv run pulumi config set clustera-infrastructure:kafka_service ${{ secrets.KAFKA_SERVICE }}
+          uv run pulumi config set clustera-infrastructure:gcp_project ${{ secrets.GCP_PROJECT }}
+          uv run pulumi config set gcp:project ${{ secrets.GCP_PROJECT }}
+          uv run pulumi config set gcp:region us-central1
+
       - name: Pulumi up
         uses: pulumi/actions@v5
         with:
