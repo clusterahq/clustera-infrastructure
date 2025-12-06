@@ -2,43 +2,80 @@
 # This file defines all Kafka topics created across all environments.
 #
 # Template Variables:
-#   {stack} - Replaced with the current stack name (development, testing, staging, production)
-#
-# Each topic requires 'name' field. All other fields are optional and override defaults.
-# Defaults: partitions=5, replication=2, retention_ms=259200000 (3 days),
-#           retention_bytes=5368709120 (5GB), cleanup_policy=delete, compression_type=snappy
-#
-# Examples:
-#   name: "clustera.events"        → clustera.events.development
-#   name: "app.commands"           → app.development.commands
-#   name: "{stack}-logs"                   → logs-development
+#   {stack} - Replaced with the current stack name (development, testing, staging, prod)
 
 topics:
-## Integrations
+  ## Integrations - Inbound
   - name: "{stack}-integrations-inbound-webhook"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
   - name: "{stack}-integrations-inbound-trigger"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
   - name: "{stack}-integrations-inbound-connection"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
+  ## Integrations - Outbound
   - name: "{stack}-integrations-outbound-data"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
+  ## Integrations - Errors
   - name: "{stack}-integrations-errors"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
+  ## Integrations - Workers
   - name: "{stack}-integrations-worker-circle"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
   - name: "{stack}-integrations-worker-gmail"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
   - name: "{stack}-integrations-worker-google-drive"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
   - name: "{stack}-integrations-worker-slack"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+
+  ## Dead Letter Queues (DLQ)
   - name: "{stack}-integrations-inbound-webhook-dlq"
+    partitions: 1
+    retention_ms: "86400000"       # 1 day
+    retention_bytes: "209715200"   # 200 MB
+
   - name: "{stack}-integrations-inbound-trigger-dlq"
+    partitions: 1
+    retention_ms: "86400000"       # 1 day
+    retention_bytes: "209715200"   # 200 MB
+
   - name: "{stack}-integrations-inbound-connection-dlq"
+    partitions: 1
+    retention_ms: "86400000"       # 1 day
+    retention_bytes: "209715200"   # 200 MB
+
   - name: "{stack}-integrations-outbound-data-dlq"
+    partitions: 1
+    retention_ms: "86400000"       # 1 day
+    retention_bytes: "209715200"   # 200 MB
+
   - name: "{stack}-integrations-errors-dlq"
-  - name: "{stack}-test2topic"
-
-
-
-
-  # - name: events
-  #   # Uses all defaults: 5 partitions, 3-day/5GB retention, snappy compression
-
-  # - name: commands
-  #   # Example with custom configuration
-  #   partitions: 10
-  #   retention_ms: "604800000"  # 7 days
-  #   retention_bytes: "10737418240"  # 10GB
+    partitions: 1
+    retention_ms: "86400000"       # 1 day
+    retention_bytes: "209715200"   # 200 MB
