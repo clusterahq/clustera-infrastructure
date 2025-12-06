@@ -76,15 +76,18 @@ topics:
 ├── __main__.py                      # Pulumi entry point
 ├── infrastructure/
 │   ├── core/                        # Core platform resources
-│   ├── data_plane/                  # Data plane resources
-│   ├── control_plane/               # Control plane resources
+│   ├── data-plane/                  # Data plane resources
+│   ├── control-plane/               # Control plane resources
 │   └── integrations/
 │       ├── shared/                  # Shared integration resources
 │       │   ├── kafka.py             # Aiven Kafka topics
-│       │   └── kafka-topics.yaml    # Kafka topic definitions
-│       ├── integration_gmail/       # Gmail integration
-│       │   └── pubsub.py            # GCP Pub/Sub
-│       └── integration_circle/      # Circle integration
+│       │   └── kafka-topics.yaml    # Shared Kafka topic definitions
+│       ├── integration-gmail/       # Gmail integration
+│       │   ├── pubsub.py            # GCP Pub/Sub
+│       │   └── kafka-topics.yaml    # Gmail-specific Kafka topics
+│       ├── integration-circle/      # Circle integration
+│       ├── integration-google-drive/# Google Drive integration
+│       └── integration-slack/       # Slack integration
 ├── Pulumi.yaml                      # Pulumi project config
 └── Pulumi.{env}.yaml                # Per-environment settings
 ```
