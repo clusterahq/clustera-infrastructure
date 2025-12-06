@@ -1,11 +1,8 @@
-# Kafka Topics Configuration
-# This file defines all Kafka topics created across all environments.
-#
-# Template Variables:
-#   {stack} - Replaced with the current stack name (development, testing, staging, prod)
+# Shared Kafka Topics
+# Topics used across all integrations
 
 topics:
-  ## Integrations - Inbound
+  ## Inbound
   - name: "{stack}-integrations-inbound-webhook"
     partitions: 1
     retention_ms: "259200000"      # 3 days
@@ -21,35 +18,14 @@ topics:
     retention_ms: "259200000"      # 3 days
     retention_bytes: "629145600"   # 600 MB
 
-  ## Integrations - Outbound
+  ## Outbound
   - name: "{stack}-integrations-outbound-data"
     partitions: 1
     retention_ms: "259200000"      # 3 days
     retention_bytes: "629145600"   # 600 MB
 
-  ## Integrations - Errors
+  ## Errors
   - name: "{stack}-integrations-errors"
-    partitions: 1
-    retention_ms: "259200000"      # 3 days
-    retention_bytes: "629145600"   # 600 MB
-
-  ## Integrations - Workers
-  - name: "{stack}-integrations-worker-circle"
-    partitions: 1
-    retention_ms: "259200000"      # 3 days
-    retention_bytes: "629145600"   # 600 MB
-
-  - name: "{stack}-integrations-worker-gmail"
-    partitions: 1
-    retention_ms: "259200000"      # 3 days
-    retention_bytes: "629145600"   # 600 MB
-
-  - name: "{stack}-integrations-worker-google-drive"
-    partitions: 1
-    retention_ms: "259200000"      # 3 days
-    retention_bytes: "629145600"   # 600 MB
-
-  - name: "{stack}-integrations-worker-slack"
     partitions: 1
     retention_ms: "259200000"      # 3 days
     retention_bytes: "629145600"   # 600 MB
