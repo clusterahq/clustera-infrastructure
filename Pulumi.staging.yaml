@@ -6,4 +6,6 @@ config:
   clustera-infrastructure:gcp_project: clustera-data-plane
   gcp:project: clustera-data-plane
   gcp:region: us-central1
+  # Gmail Integration
+  clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera-staging.io/webhooks/gmail
 encryptionsalt: v1:d83qim1llaM=:v1:BbMEJ7qW+wQlra5o:OifRVjpPjl6GkSqNJAMkRl762McwXw==

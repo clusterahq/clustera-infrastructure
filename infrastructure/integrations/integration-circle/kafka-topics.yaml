@@ -1,0 +1,7 @@
+# Circle Integration Kafka Topics
+
+topics:
+  - name: "{stack}-integrations-worker-circle"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB

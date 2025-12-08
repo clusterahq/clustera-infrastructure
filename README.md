@@ -53,38 +53,43 @@ When you open a PR, GitHub Actions runs `pulumi preview` and posts the planned c
 
 ### Adding or Modifying Kafka Topics
 
-Edit `kafka-topics.yaml`:
+Edit `infrastructure/integrations/shared/kafka-topics.yaml`:
 
 ```yaml
 topics:
   - name: "{stack}-my-new-topic"        # {stack} is replaced with environment name
-    partitions: 5                        # optional, default: 5
-    retention_ms: "259200000"            # optional, default: 3 days
+    partitions: 1
+    retention_ms: "259200000"            # 3 days
+    retention_bytes: "629145600"         # 600 MB
 ```
-
-Defaults (if not specified):
-- Partitions: 5
-- Replication: 2
-- Retention: 3 days (259200000 ms)
-- Retention bytes: 5 GB
-- Compression: snappy
 
 ### Adding New Infrastructure
 
-1. Create or edit modules in `infrastructure/`
-2. Import and call from `__main__.py`
-3. Commit and push
+1. Create or edit modules in the appropriate category under `infrastructure/`
+2. Export from the category's `__init__.py`
+3. Import and call from `__main__.py`
+4. Commit and push
 
 ## Project Structure
 
 ```
-├── __main__.py              # Pulumi entry point
-├── infrastructure/          # Infrastructure modules
-│   ├── kafka.py             # Aiven Kafka topics
-│   └── pubsub.py            # GCP Pub/Sub (currently disabled)
-├── kafka-topics.yaml        # Kafka topic definitions
-├── Pulumi.yaml              # Pulumi project config
-└── Pulumi.{env}.yaml        # Per-environment settings
+├── __main__.py                      # Pulumi entry point
+├── infrastructure/
+│   ├── core/                        # Core platform resources
+│   ├── data-plane/                  # Data plane resources
+│   ├── control-plane/               # Control plane resources
+│   └── integrations/
+│       ├── shared/                  # Shared integration resources
+│       │   ├── kafka.py             # Aiven Kafka topics
+│       │   └── kafka-topics.yaml    # Shared Kafka topic definitions
+│       ├── integration-gmail/       # Gmail integration
+│       │   ├── pubsub.py            # GCP Pub/Sub
+│       │   └── kafka-topics.yaml    # Gmail-specific Kafka topics
+│       ├── integration-circle/      # Circle integration
+│       ├── integration-google-drive/# Google Drive integration
+│       └── integration-slack/       # Slack integration
+├── Pulumi.yaml                      # Pulumi project config
+└── Pulumi.{env}.yaml                # Per-environment settings
 ```
 
 ## Promoting Changes
