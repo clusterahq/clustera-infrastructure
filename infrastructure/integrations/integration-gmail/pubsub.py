@@ -17,7 +17,7 @@ import pulumi_gcp as gcp
 GMAIL_API_SERVICE_ACCOUNT = "gmail-api-push@system.gserviceaccount.com"
 
 
-def create_pubsub_resources(config: pulumi.Config, depends_on: list = None) -> dict:
+def create_pubsub_resources(config: pulumi.Config) -> dict:
     """Create Pub/Sub resources for Gmail push notifications.
 
     Creates:
@@ -25,16 +25,15 @@ def create_pubsub_resources(config: pulumi.Config, depends_on: list = None) -> d
     - IAM binding: Grants Gmail API publish access to the topic
     - Push subscription: Forwards notifications to webhook endpoint
 
+    Note: Requires org policy override for iam.allowedPolicyMemberDomains
+    to allow system.gserviceaccount.com (set via gcloud, not Pulumi).
+
     Args:
         config: Pulumi configuration object
-        depends_on: Optional list of resources that must be created first
-                   (e.g., org policy overrides)
 
     Returns:
         Dictionary of created resources and outputs
     """
-    if depends_on is None:
-        depends_on = []
     stack = pulumi.get_stack()
     is_production = stack in ["production", "prod"]
 
@@ -62,17 +61,13 @@ def create_pubsub_resources(config: pulumi.Config, depends_on: list = None) -> d
 
     # Grant Gmail API service account permission to publish to the topic
     # This is required for Gmail to send push notifications
-    # Note: Requires org policy override to allow system.gserviceaccount.com
     gmail_publisher_binding = gcp.pubsub.TopicIAMMember(
         "gmail-api-publisher",
         project=gcp_project,
         topic=gmail_topic.name,
         role="roles/pubsub.publisher",
         member=f"serviceAccount:{GMAIL_API_SERVICE_ACCOUNT}",
-        opts=pulumi.ResourceOptions(
-            protect=is_production,
-            depends_on=depends_on,
-        ),
+        opts=pulumi.ResourceOptions(protect=is_production),
     )
 
     # Create subscription based on whether webhook endpoint is configured
