@@ -17,7 +17,7 @@ import pulumi_gcp as gcp
 GMAIL_API_SERVICE_ACCOUNT = "gmail-api-push@system.gserviceaccount.com"
 
 
-def create_pubsub_resources(config: pulumi.Config) -> dict:
+def create_pubsub_resources(config: pulumi.Config, depends_on: list = None) -> dict:
     """Create Pub/Sub resources for Gmail push notifications.
 
     Creates:
@@ -27,10 +27,14 @@ def create_pubsub_resources(config: pulumi.Config) -> dict:
 
     Args:
         config: Pulumi configuration object
+        depends_on: Optional list of resources that must be created first
+                   (e.g., org policy overrides)
 
     Returns:
         Dictionary of created resources and outputs
     """
+    if depends_on is None:
+        depends_on = []
     stack = pulumi.get_stack()
     is_production = stack in ["production", "prod"]
 
@@ -58,25 +62,18 @@ def create_pubsub_resources(config: pulumi.Config) -> dict:
 
     # Grant Gmail API service account permission to publish to the topic
     # This is required for Gmail to send push notifications
-    #
-    # NOTE: Commented out due to GCP org policy constraint (iam.allowedPolicyMemberDomains)
-    # blocking external service accounts. To enable Gmail push notifications:
-    # 1. Update org policy to allow system.gserviceaccount.com domain, OR
-    # 2. Add IAM binding manually via GCP Console/gcloud:
-    #    gcloud pubsub topics add-iam-policy-binding {stack}-integration-gmail-webhook \
-    #      --member="serviceAccount:gmail-api-push@system.gserviceaccount.com" \
-    #      --role="roles/pubsub.publisher" \
-    #      --project={gcp_project}
-    #
-    # gmail_publisher_binding = gcp.pubsub.TopicIAMMember(
-    #     "gmail-api-publisher",
-    #     project=gcp_project,
-    #     topic=gmail_topic.name,
-    #     role="roles/pubsub.publisher",
-    #     member=f"serviceAccount:{GMAIL_API_SERVICE_ACCOUNT}",
-    #     opts=pulumi.ResourceOptions(protect=is_production),
-    # )
-    gmail_publisher_binding = None  # Placeholder until org policy is updated
+    # Note: Requires org policy override to allow system.gserviceaccount.com
+    gmail_publisher_binding = gcp.pubsub.TopicIAMMember(
+        "gmail-api-publisher",
+        project=gcp_project,
+        topic=gmail_topic.name,
+        role="roles/pubsub.publisher",
+        member=f"serviceAccount:{GMAIL_API_SERVICE_ACCOUNT}",
+        opts=pulumi.ResourceOptions(
+            protect=is_production,
+            depends_on=depends_on,
+        ),
+    )
 
     # Create subscription based on whether webhook endpoint is configured
     if webhook_endpoint:
