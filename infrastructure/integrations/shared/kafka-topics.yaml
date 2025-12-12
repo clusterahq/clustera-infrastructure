@@ -2,51 +2,19 @@
 # Topics used across all integrations
 
 topics:
-  ## Inbound
-  - name: "{stack}-integrations-inbound-webhook"
+  ## Core Topics
+  - name: "{stack}-integrations-incoming-records"
     partitions: 1
     retention_ms: "259200000"      # 3 days
     retention_bytes: "629145600"   # 600 MB
 
-  - name: "{stack}-integrations-inbound-trigger"
-    partitions: 1
-    retention_ms: "259200000"      # 3 days
-    retention_bytes: "629145600"   # 600 MB
-
-  - name: "{stack}-integrations-inbound-connection"
-    partitions: 1
-    retention_ms: "259200000"      # 3 days
-    retention_bytes: "629145600"   # 600 MB
-
-  ## Outbound
-  - name: "{stack}-integrations-outbound-data"
-    partitions: 1
-    retention_ms: "259200000"      # 3 days
-    retention_bytes: "629145600"   # 600 MB
-
-  ## Errors
   - name: "{stack}-integrations-errors"
     partitions: 1
     retention_ms: "259200000"      # 3 days
     retention_bytes: "629145600"   # 600 MB
 
-  ## Dead Letter Queues (DLQ)
-  - name: "{stack}-integrations-inbound-webhook-dlq"
-    partitions: 1
-    retention_ms: "86400000"       # 1 day
-    retention_bytes: "209715200"   # 200 MB
-
-  - name: "{stack}-integrations-inbound-trigger-dlq"
-    partitions: 1
-    retention_ms: "86400000"       # 1 day
-    retention_bytes: "209715200"   # 200 MB
-
-  - name: "{stack}-integrations-inbound-connection-dlq"
-    partitions: 1
-    retention_ms: "86400000"       # 1 day
-    retention_bytes: "209715200"   # 200 MB
-
-  - name: "{stack}-integrations-outbound-data-dlq"
+  ## Dead Letter Queues
+  - name: "{stack}-integrations-incoming-records-dlq"
     partitions: 1
     retention_ms: "86400000"       # 1 day
     retention_bytes: "209715200"   # 200 MB

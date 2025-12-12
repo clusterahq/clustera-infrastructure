@@ -15,6 +15,7 @@ DEFAULT_TOPIC_CONFIG = {
     "retention_bytes": "629145600",  # 600 MB
     "cleanup_policy": "delete",
     "compression_type": "snappy",
+    "max_message_bytes": "26214400",  # 25 MB (for large enrichment payloads)
 }
 
 
@@ -117,6 +118,7 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
         retention_bytes = topic_def.get("retention_bytes", DEFAULT_TOPIC_CONFIG["retention_bytes"])
         cleanup_policy = topic_def.get("cleanup_policy", DEFAULT_TOPIC_CONFIG["cleanup_policy"])
         compression_type = topic_def.get("compression_type", DEFAULT_TOPIC_CONFIG["compression_type"])
+        max_message_bytes = topic_def.get("max_message_bytes", DEFAULT_TOPIC_CONFIG["max_message_bytes"])
 
         # Apply template substitution for {stack} variable in topic name
         full_topic_name = topic_name.replace("{stack}", stack)
@@ -137,6 +139,7 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
                 "retention_bytes": str(retention_bytes),
                 "cleanup_policy": cleanup_policy,
                 "compression_type": compression_type,
+                "max_message_bytes": str(max_message_bytes),
             },
             tags=[
                 aiven.KafkaTopicTagArgs(

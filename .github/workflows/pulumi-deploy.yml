@@ -25,6 +25,10 @@ jobs:
       pull-requests: write
       id-token: write
 
+    # Use environment based on target branch to access environment secrets
+    environment:
+      name: ${{ github.base_ref == 'main' && 'production' || 'development' }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
