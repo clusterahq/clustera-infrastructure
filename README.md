@@ -33,12 +33,13 @@ All deployments happen through Git. Push to a branch, and GitHub Actions deploys
 
 ### Branch → Environment Mapping
 
-| Branch | Environment | Auto-Deploy |
-|--------|-------------|-------------|
+| Branch | Stack | Auto-Deploy |
+|--------|-------|-------------|
 | `development` | development | Yes |
 | `testing` | testing | Yes |
 | `staging` | staging | Yes |
 | `main` | prod | Yes (requires approval) |
+| `steve1` | steve1 | Yes |
 
 ### Deployment Flow
 
@@ -198,6 +199,45 @@ git push
 - **Production resources** have deletion protection enabled
 - **Production deploys** require manual approval via GitHub Environments
 - **All secrets** are encrypted in stack configs
+
+## Adding a New Personal Environment
+
+To create a new environment (e.g., `juan1`):
+
+1. **Add branch to workflow** (`.github/workflows/pulumi-deploy.yml`):
+   ```yaml
+   branches:
+     - juan1  # Add to both push and pull_request sections
+   ```
+
+2. **Add stack mapping** (in both `preview` and `deploy` jobs):
+   ```bash
+   case "${{ github.ref_name }}" in
+     ...
+     juan1) echo "stack=juan1" >> $GITHUB_OUTPUT ;;
+   ```
+
+3. **Create stack config** (`Pulumi.juan1.yaml`):
+   ```yaml
+   config:
+     clustera-infrastructure:aiven_project: clustera-creators
+     clustera-infrastructure:kafka_service: kafka-clustera
+     clustera-infrastructure:gcp_project: clustera-data-plane
+     gcp:project: clustera-data-plane
+     gcp:region: us-central1
+   ```
+
+4. **Commit and push**:
+   ```bash
+   git checkout -b juan1
+   git add .github/workflows/pulumi-deploy.yml Pulumi.juan1.yaml
+   git commit -m "Add juan1 environment"
+   git push -u origin juan1
+   ```
+
+GitHub Actions will create all topics with the `juan1-` prefix (e.g., `juan1-runtime`, `juan1-integrations-worker-gmail`).
+
+**Note**: Personal dev branches automatically use the `development` GitHub Environment for secrets (AIVEN_TOKEN, GCP_SERVICE_ACCOUNT_KEY, R2 credentials, etc.). No additional GitHub Environment configuration needed.
 
 ## Makefile Commands
 

@@ -7,12 +7,14 @@ on:
       - development   # Deploy to development
       - staging       # Deploy to staging
       - testing       # Deploy to testing
+      - steve1        # Deploy to steve1
   pull_request:
     branches:
       - main
       - development
       - staging
       - testing
+      - steve1
 
 jobs:
   preview:
@@ -54,6 +56,7 @@ jobs:
             development) echo "stack=development" >> $GITHUB_OUTPUT ;;
             staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
             testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
+            steve1) echo "stack=steve1" >> $GITHUB_OUTPUT ;;
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
@@ -97,6 +100,7 @@ jobs:
       id-token: write
 
     # Dynamically set environment based on branch
+    # Personal dev branches (steve1, etc.) use 'development' environment for secrets
     environment:
       name: ${{ github.ref_name == 'main' && 'production' || (github.ref_name == 'staging' && 'staging' || (github.ref_name == 'testing' && 'testing' || 'development')) }}
 
@@ -125,6 +129,7 @@ jobs:
             development) echo "stack=development" >> $GITHUB_OUTPUT ;;
             staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
             testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
+            steve1) echo "stack=steve1" >> $GITHUB_OUTPUT ;;
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
@@ -146,7 +151,7 @@ jobs:
         with:
           command: up
           stack-name: ${{ steps.stack.outputs.stack }}
-          upsert: false  # Fail if stack doesn't exist
+          upsert: true  # Create stack if it doesn't exist
         env:
           PULUMI_ACCESS_TOKEN: ""  # Not needed with R2 backend
           AIVEN_TOKEN: ${{ secrets.AIVEN_TOKEN }}

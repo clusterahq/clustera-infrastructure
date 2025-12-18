@@ -53,12 +53,50 @@ clustera-infrastructure/
 
 ## Environments (Stacks)
 
-| Stack | Purpose | Protection |
-|-------|---------|------------|
-| `development` | Local dev, experimentation | None |
-| `testing` | Automated tests, QA | None |
-| `staging` | Pre-production validation | None |
-| `prod` / `production` | Live production | **Protected** (cannot delete resources) |
+Deployments are **branch-based**. Each branch deploys to its corresponding stack.
+
+| Branch | Stack | Purpose | Protection |
+|--------|-------|---------|------------|
+| `development` | development | Shared dev environment | None |
+| `testing` | testing | Automated tests, QA | None |
+| `staging` | staging | Pre-production validation | None |
+| `main` | prod | Live production | **Protected** |
+| `steve1` | steve1 | Personal dev (Steve) | None |
+
+### Adding a New Personal Environment
+
+To create a new environment (e.g., `juan1`):
+
+1. **Add branch to workflow** (`.github/workflows/pulumi-deploy.yml`):
+   ```yaml
+   branches:
+     - juan1  # Add to both push and pull_request sections
+   ```
+
+2. **Add stack mapping** (in both `preview` and `deploy` jobs):
+   ```bash
+   juan1) echo "stack=juan1" >> $GITHUB_OUTPUT ;;
+   ```
+
+3. **Create stack config** (`Pulumi.juan1.yaml`):
+   ```yaml
+   config:
+     clustera-infrastructure:aiven_project: clustera-creators
+     clustera-infrastructure:kafka_service: kafka-clustera
+     clustera-infrastructure:gcp_project: clustera-data-plane
+     gcp:project: clustera-data-plane
+     gcp:region: us-central1
+   ```
+
+4. **Create and push the branch**:
+   ```bash
+   git checkout -b juan1
+   git push -u origin juan1
+   ```
+
+GitHub Actions will create all topics with the `juan1-` prefix.
+
+**GitHub Environment for Secrets**: Personal dev branches automatically use the `development` GitHub Environment for secrets (AIVEN_TOKEN, GCP_SERVICE_ACCOUNT_KEY, etc.). No additional GitHub Environment setup needed.
 
 ## Cloud Resources Managed
 
