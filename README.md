@@ -9,6 +9,24 @@ Infrastructure as code for the Clustera platform, managing Aiven Kafka topics an
 - **Cloudflare R2** stores Pulumi state (no Pulumi Cloud account needed)
 - **Four environments**: development, testing, staging, prod
 
+## Quick Start (Local Development)
+
+```bash
+# Install dependencies
+make install
+
+# Copy and configure credentials
+cp .env.example .env
+# Edit .env with your R2, Aiven, and GCP credentials
+
+# Initialize a stack
+make init
+
+# Preview and deploy
+make preview
+make up
+```
+
 ## Deploying Changes
 
 All deployments happen through Git. Push to a branch, and GitHub Actions deploys to the corresponding environment.
@@ -51,45 +69,108 @@ When you open a PR, GitHub Actions runs `pulumi preview` and posts the planned c
 
 ## Making Changes
 
-### Adding or Modifying Kafka Topics
+### Adding Kafka Topics for a New Integration
 
-Edit `infrastructure/integrations/shared/kafka-topics.yaml`:
+1. Create directory: `infrastructure/integrations/integration-<name>/`
+2. Add `kafka-topics.yaml`:
+
+```yaml
+# <Name> Integration Kafka Topics
+
+topics:
+  - name: "{stack}-integrations-worker-<name>"
+    partitions: 1
+    retention_ms: "259200000"      # 3 days
+    retention_bytes: "629145600"   # 600 MB
+```
+
+Topics are auto-discovered from `kafka-topics.yaml` files and created on next deploy.
+
+### Adding Data Plane Topics
+
+Edit `infrastructure/data_plane/kafka-topics.yaml`:
 
 ```yaml
 topics:
-  - name: "{stack}-my-new-topic"        # {stack} is replaced with environment name
+  - name: "{stack}-my-new-topic"
     partitions: 1
-    retention_ms: "259200000"            # 3 days
-    retention_bytes: "629145600"         # 600 MB
+    replication: 3
+    retention_ms: "604800000"      # 7 days
+    retention_bytes: "-1"          # unlimited
 ```
 
-### Adding New Infrastructure
+### Default Topic Configuration
 
-1. Create or edit modules in the appropriate category under `infrastructure/`
-2. Export from the category's `__init__.py`
-3. Import and call from `__main__.py`
-4. Commit and push
+| Setting | Data Plane | Integrations |
+|---------|------------|--------------|
+| Partitions | 1-10 | 1 |
+| Replication | 3 | 2 |
+| Retention | 7 days | 3 days |
+| Max Message | 25 MB | 25 MB |
+| Compression | snappy | snappy |
 
 ## Project Structure
 
 ```
-├── __main__.py                      # Pulumi entry point
+├── __main__.py                           # Pulumi entry point
 ├── infrastructure/
-│   ├── core/                        # Core platform resources
-│   ├── data-plane/                  # Data plane resources
-│   ├── control-plane/               # Control plane resources
+│   ├── core/                             # Core platform resources (future)
+│   ├── control-plane/                    # Control plane resources (future)
+│   ├── data_plane/                       # Data plane Kafka topics
+│   │   ├── kafka.py                      # Topic creation logic
+│   │   └── kafka-topics.yaml             # Topic definitions (17 topics)
 │   └── integrations/
-│       ├── shared/                  # Shared integration resources
-│       │   ├── kafka.py             # Aiven Kafka topics
-│       │   └── kafka-topics.yaml    # Shared Kafka topic definitions
-│       ├── integration-gmail/       # Gmail integration
-│       │   ├── pubsub.py            # GCP Pub/Sub
-│       │   └── kafka-topics.yaml    # Gmail-specific Kafka topics
-│       ├── integration-circle/      # Circle integration
-│       ├── integration-google-drive/# Google Drive integration
-│       └── integration-slack/       # Slack integration
-├── Pulumi.yaml                      # Pulumi project config
-└── Pulumi.{env}.yaml                # Per-environment settings
+│       ├── shared/                       # Shared integration resources
+│       │   ├── kafka.py                  # YAML-driven topic creation
+│       │   └── kafka-topics.yaml         # Shared topics + DLQs
+│       ├── integration-gmail/            # Gmail (Pub/Sub + Kafka)
+│       ├── integration-slack/            # Slack
+│       ├── integration-zoom/             # Zoom
+│       ├── integration-google-drive/     # Google Drive
+│       ├── integration-circle/           # Circle
+│       └── integration-distribution/     # Distribution
+├── Pulumi.yaml                           # Pulumi project config
+├── Pulumi.{env}.yaml.example             # Per-environment config templates
+├── .env.example                          # Credentials template
+└── Makefile                              # Helper commands
+```
+
+## Resources Managed
+
+### Aiven Kafka Topics
+
+**Data Plane** (17 topics):
+- Runtime, Cerebras, ingestion control
+- HTTP, WebSocket, SSE, NGINX request/response topics
+
+**Integrations** (10+ topics):
+- Shared incoming records and errors
+- Per-integration worker queues (Gmail, Slack, Zoom, etc.)
+- Dead letter queues for failed messages
+
+### GCP Pub/Sub
+
+**Gmail Integration**:
+- Topic for Gmail API push notifications
+- IAM binding for `gmail-api-push@system.gserviceaccount.com`
+- Push or pull subscription (configurable)
+
+## Auditing Kafka Topics
+
+To list existing topics and verify they're under management:
+
+```bash
+# Install Aiven CLI
+pip install aiven-client
+
+# Login
+avn user login
+
+# List all topics
+avn service topic-list <kafka-service> --project <project>
+
+# Or use Aiven Console
+open https://console.aiven.io
 ```
 
 ## Promoting Changes
@@ -117,6 +198,87 @@ git push
 - **Production resources** have deletion protection enabled
 - **Production deploys** require manual approval via GitHub Environments
 - **All secrets** are encrypted in stack configs
+
+## Makefile Commands
+
+```bash
+make help             # Show all available commands
+make install          # Install dependencies with uv
+make init             # Initialize Pulumi stack (interactive)
+make preview          # Preview infrastructure changes
+make up               # Deploy infrastructure
+make outputs          # Show stack outputs
+make refresh          # Sync state with cloud
+make destroy          # Destroy infrastructure (careful!)
+make select-dev       # Switch to development stack
+make select-staging   # Switch to staging stack
+make select-prod      # Switch to production stack
+```
+
+## Configuration
+
+### Required Pulumi Config
+
+```bash
+pulumi config set aiven_project <project-name>
+pulumi config set kafka_service <kafka-service-name>
+pulumi config set gcp_project <gcp-project-id>
+pulumi config set gcp:project <gcp-project-id>
+pulumi config set gcp:region us-central1
+```
+
+### Optional Config
+
+```bash
+# Gmail webhook endpoint (if not set, creates pull subscription)
+pulumi config set gmail_webhook_endpoint https://your-endpoint.com/webhook
+```
+
+### Environment Variables (.env)
+
+```bash
+# R2 Backend
+AWS_ACCESS_KEY_ID=<r2-access-key>
+AWS_SECRET_ACCESS_KEY=<r2-secret-key>
+AWS_REGION=auto
+AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
+
+# Secrets encryption
+PULUMI_CONFIG_PASSPHRASE=<passphrase>
+
+# Providers
+AIVEN_TOKEN=<aiven-api-token>
+GOOGLE_CREDENTIALS=keys/gcp/service-account.json
+```
+
+## Troubleshooting
+
+### State Lock Issues
+```bash
+pulumi cancel
+```
+
+### Authentication Errors
+```bash
+# Aiven - set token
+export AIVEN_TOKEN=your_token
+
+# GCP - activate service account
+export GOOGLE_CREDENTIALS=/path/to/key.json
+gcloud auth activate-service-account --key-file=$GOOGLE_CREDENTIALS
+
+# R2 - verify login
+pulumi login s3://clustera-infrastructure-pulumi
+```
+
+### Gmail Pub/Sub IAM Error
+
+If you get "One or more users named in the policy do not belong to a permitted customer":
+
+```bash
+# Override org policy (one-time, requires org admin)
+gcloud org-policies reset iam.allowedPolicyMemberDomains --project=<project-id>
+```
 
 ## Documentation
 
