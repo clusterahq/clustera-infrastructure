@@ -43,6 +43,10 @@ def create_pubsub_resources(config: pulumi.Config) -> dict:
     # Get webhook endpoint URL (optional - if not set, creates pull subscription)
     webhook_endpoint = config.get("gmail_webhook_endpoint")
 
+    # Get webhook secret for signature validation (optional but recommended)
+    # This is sent as X-Goog-Channel-Token header with each push notification
+    webhook_secret = config.get_secret("gmail_webhook_secret")
+
     # Topic for Gmail push notifications
     # Google recommends using a single topic for all Gmail API notifications
     gmail_topic = gcp.pubsub.Topic(
@@ -72,6 +76,15 @@ def create_pubsub_resources(config: pulumi.Config) -> dict:
 
     # Create subscription based on whether webhook endpoint is configured
     if webhook_endpoint:
+        # Build push endpoint URL, optionally with secret as query param
+        # This provides a simple way to validate webhook authenticity
+        if webhook_secret:
+            push_endpoint = pulumi.Output.concat(
+                webhook_endpoint, "?token=", webhook_secret
+            )
+        else:
+            push_endpoint = webhook_endpoint
+
         # Push subscription - forwards messages to webhook endpoint
         gmail_subscription = gcp.pubsub.Subscription(
             "integration-gmail-webhook-subscription",
@@ -85,7 +98,7 @@ def create_pubsub_resources(config: pulumi.Config) -> dict:
                 ttl="",  # Never expire
             ),
             push_config=gcp.pubsub.SubscriptionPushConfigArgs(
-                push_endpoint=webhook_endpoint,
+                push_endpoint=push_endpoint,
                 attributes={
                     "x-goog-version": "v1",
                 },
