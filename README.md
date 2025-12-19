@@ -374,3 +374,4 @@ gcloud org-policies reset iam.allowedPolicyMemberDomains --project=<project-id>
 - [Initial Setup](docs/setup.md) - One-time setup for R2, Aiven, GCP, and GitHub secrets
 - [Local Development](docs/local-development.md) - Running Pulumi commands locally
 - [CI/CD Workflow](.github/workflows/README.md) - Detailed workflow documentation
+# GCP project migration complete
