@@ -60,9 +60,11 @@ jobs:
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
-      - name: Configure GCP credentials
-        run: |
-          printf '%s' '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/gcp-key.json
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Pulumi login to R2 backend
         env:
@@ -88,7 +90,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL_S3: ${{ secrets.AWS_ENDPOINT_URL_S3 }}
           AWS_REGION: auto
-          GOOGLE_CREDENTIALS: /tmp/gcp-key.json
 
   deploy:
     name: Pulumi Deploy
@@ -133,9 +134,11 @@ jobs:
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
-      - name: Configure GCP credentials
-        run: |
-          printf '%s' '${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}' > /tmp/gcp-key.json
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
       - name: Pulumi login to R2 backend
         env:
@@ -160,7 +163,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_ENDPOINT_URL_S3: ${{ secrets.AWS_ENDPOINT_URL_S3 }}
           AWS_REGION: auto
-          GOOGLE_CREDENTIALS: /tmp/gcp-key.json
 
       - name: Export stack outputs
         if: success()
