@@ -53,16 +53,34 @@ pulumi stack select staging
 
 ## GCP Authentication (Local)
 
-For local development, you can use your personal GCP credentials:
+**Recommended:** Use your personal GCP credentials with service account impersonation:
 
 ```bash
-gcloud auth application-default login
+# 1. Authenticate with your personal account
+gcloud auth application-default login --project=clustera-control-plane
+
+# 2. Grant yourself permission to impersonate the service account (one-time)
+gcloud iam service-accounts add-iam-policy-binding \
+  pulumi-infrastructure@clustera-control-plane.iam.gserviceaccount.com \
+  --member=user:YOUR_EMAIL@clustera.io \
+  --role=roles/iam.serviceAccountTokenCreator
+
+# 3. Enable impersonation in your .env
+export GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=pulumi-infrastructure@clustera-control-plane.iam.gserviceaccount.com
 ```
 
-Or use a service account key:
+**Benefits:**
+- ✅ No service account keys to manage
+- ✅ Better audit trail (changes show your email, not a generic service account)
+- ✅ Credentials automatically refresh
+
+**Alternative:** Use your personal credentials directly (without impersonation):
 ```bash
-export GOOGLE_CREDENTIALS=/path/to/gcp-key.json
+gcloud auth application-default login --project=clustera-control-plane
+# Don't set GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
 ```
+
+**Note:** Service account keys are no longer recommended due to org policy restrictions and security best practices.
 
 ## Troubleshooting
 
@@ -79,7 +97,15 @@ Verify credentials are set:
 ```bash
 echo $AIVEN_TOKEN
 echo $AWS_ACCESS_KEY_ID
-echo $GOOGLE_CREDENTIALS
+echo $GOOGLE_IMPERSONATE_SERVICE_ACCOUNT
+
+# Test GCP authentication
+gcloud auth application-default print-access-token
+```
+
+If GCP auth fails, re-authenticate:
+```bash
+gcloud auth application-default login --project=clustera-control-plane
 ```
 
 ### Import Existing Resources

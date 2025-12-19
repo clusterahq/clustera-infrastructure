@@ -15,9 +15,19 @@ Infrastructure as code for the Clustera platform, managing Aiven Kafka topics an
 # Install dependencies
 make install
 
+# Authenticate with GCP using your personal account
+gcloud auth application-default login --project=clustera-control-plane
+
+# Grant yourself permission to impersonate the service account (one-time)
+gcloud iam service-accounts add-iam-policy-binding \
+  pulumi-infrastructure@clustera-control-plane.iam.gserviceaccount.com \
+  --member=user:YOUR_EMAIL@clustera.io \
+  --role=roles/iam.serviceAccountTokenCreator
+
 # Copy and configure credentials
 cp .env.example .env
-# Edit .env with your R2, Aiven, and GCP credentials
+# Edit .env with your R2 and Aiven credentials
+# Note: GCP auth is handled by gcloud, no keys needed in .env
 
 # Initialize a stack
 make init
@@ -200,6 +210,39 @@ git push
 - **Production deploys** require manual approval via GitHub Environments
 - **All secrets** are encrypted in stack configs
 
+## GitHub Actions Configuration
+
+GitHub Actions uses **Workload Identity Federation** to authenticate with GCP (no service account keys needed).
+
+### Required GitHub Secrets
+
+Configure these in your repository settings (`Settings → Secrets and variables → Actions`):
+
+| Secret Name | Description | Example Value |
+|-------------|-------------|---------------|
+| `AWS_ACCESS_KEY_ID` | Cloudflare R2 access key | `abc123...` |
+| `AWS_SECRET_ACCESS_KEY` | Cloudflare R2 secret key | `xyz789...` |
+| `AWS_ENDPOINT_URL_S3` | R2 endpoint URL | `https://...r2.cloudflarestorage.com` |
+| `PULUMI_CONFIG_PASSPHRASE` | Passphrase for stack secrets | `your-secure-passphrase` |
+| `AIVEN_TOKEN` | Aiven API token | `your-aiven-token` |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | GCP Workload Identity Provider | `projects/.../workloadIdentityPools/.../providers/...` |
+| `GCP_SERVICE_ACCOUNT` | GCP Service Account email | `pulumi-infrastructure@project.iam.gserviceaccount.com` |
+
+### Setting up Workload Identity Federation
+
+Run the setup script (requires GCP org admin or project owner):
+
+```bash
+./setup-gcp-workload-identity-v3.sh clustera-control-plane clusterahq clustera-infrastructure
+```
+
+This creates the Workload Identity Pool and Provider, then outputs the values for `GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_SERVICE_ACCOUNT` secrets.
+
+**Benefits of Workload Identity Federation:**
+- ✅ No service account keys to manage or rotate
+- ✅ More secure (credentials are short-lived tokens)
+- ✅ Better compliance with GCP security best practices
+
 ## Adding a New Personal Environment
 
 To create a new environment (e.g., `juan1`):
@@ -222,8 +265,8 @@ To create a new environment (e.g., `juan1`):
    config:
      clustera-infrastructure:aiven_project: clustera-creators
      clustera-infrastructure:kafka_service: kafka-clustera
-     clustera-infrastructure:gcp_project: clustera-data-plane
-     gcp:project: clustera-data-plane
+     clustera-infrastructure:gcp_project: clustera-control-plane
+     gcp:project: clustera-control-plane
      gcp:region: us-central1
    ```
 
@@ -237,7 +280,7 @@ To create a new environment (e.g., `juan1`):
 
 GitHub Actions will create all topics with the `juan1-` prefix (e.g., `juan1-runtime`, `juan1-integrations-worker-gmail`).
 
-**Note**: Personal dev branches automatically use the `development` GitHub Environment for secrets (AIVEN_TOKEN, GCP_SERVICE_ACCOUNT_KEY, R2 credentials, etc.). No additional GitHub Environment configuration needed.
+**Note**: Personal dev branches automatically use the `development` GitHub Environment for secrets (AIVEN_TOKEN, GCP credentials, R2 credentials, etc.). No additional GitHub Environment configuration needed.
 
 ## Makefile Commands
 
@@ -286,9 +329,13 @@ AWS_ENDPOINT_URL_S3=https://<account-id>.r2.cloudflarestorage.com
 # Secrets encryption
 PULUMI_CONFIG_PASSPHRASE=<passphrase>
 
-# Providers
+# Aiven
 AIVEN_TOKEN=<aiven-api-token>
-GOOGLE_CREDENTIALS=keys/gcp/service-account.json
+
+# GCP (Local Development)
+# Use service account impersonation (recommended)
+GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=pulumi-infrastructure@clustera-control-plane.iam.gserviceaccount.com
+# First authenticate: gcloud auth application-default login --project=clustera-control-plane
 ```
 
 ## Troubleshooting
@@ -303,9 +350,11 @@ pulumi cancel
 # Aiven - set token
 export AIVEN_TOKEN=your_token
 
-# GCP - activate service account
-export GOOGLE_CREDENTIALS=/path/to/key.json
-gcloud auth activate-service-account --key-file=$GOOGLE_CREDENTIALS
+# GCP - re-authenticate with your personal account
+gcloud auth application-default login --project=clustera-control-plane
+
+# GCP - verify impersonation is set
+export GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=pulumi-infrastructure@clustera-control-plane.iam.gserviceaccount.com
 
 # R2 - verify login
 pulumi login s3://clustera-infrastructure-pulumi

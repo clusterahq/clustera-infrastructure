@@ -44,21 +44,40 @@ AIVEN_TOKEN=<your-aiven-token>
 
 ## GCP Setup
 
-### Create Service Account
+### For GitHub Actions: Workload Identity Federation (Recommended)
+
+Use the provided script to set up Workload Identity Federation:
 
 ```bash
-# Create service account
-gcloud iam service-accounts create pulumi-infrastructure \
-  --display-name="Pulumi Infrastructure"
+# Run the setup script (requires GCP org admin or project owner)
+./setup-gcp-workload-identity-v3.sh clustera-control-plane clusterahq clustera-infrastructure
 
-# Grant Pub/Sub permissions
-gcloud projects add-iam-policy-binding your-gcp-project-id \
-  --member="serviceAccount:pulumi-infrastructure@your-project.iam.gserviceaccount.com" \
-  --role="roles/pubsub.admin"
+# This will output values for:
+# - GCP_WORKLOAD_IDENTITY_PROVIDER
+# - GCP_SERVICE_ACCOUNT
+```
 
-# Create and download key
-gcloud iam service-accounts keys create gcp-key.json \
-  --iam-account=pulumi-infrastructure@your-project.iam.gserviceaccount.com
+**Benefits:**
+- ✅ No service account keys to manage or rotate
+- ✅ More secure (short-lived tokens)
+- ✅ Complies with GCP security best practices
+
+### For Local Development: Use Personal Credentials
+
+Authenticate with your personal GCP account and use service account impersonation:
+
+```bash
+# 1. Authenticate with your personal account
+gcloud auth application-default login --project=clustera-control-plane
+
+# 2. Grant yourself permission to impersonate the service account (one-time)
+gcloud iam service-accounts add-iam-policy-binding \
+  pulumi-infrastructure@clustera-control-plane.iam.gserviceaccount.com \
+  --member=user:YOUR_EMAIL@clustera.io \
+  --role=roles/iam.serviceAccountTokenCreator
+
+# 3. Add to your .env file:
+# export GOOGLE_IMPERSONATE_SERVICE_ACCOUNT=pulumi-infrastructure@clustera-control-plane.iam.gserviceaccount.com
 ```
 
 ## GitHub Secrets
@@ -72,7 +91,8 @@ Configure these secrets in GitHub repository settings (Settings → Secrets and 
 | `AWS_ENDPOINT_URL_S3` | R2 endpoint URL |
 | `PULUMI_CONFIG_PASSPHRASE` | Passphrase for encrypting stack secrets |
 | `AIVEN_TOKEN` | Aiven API token |
-| `GCP_SERVICE_ACCOUNT_KEY` | GCP service account JSON key (contents, not path) |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Workload Identity Provider resource name |
+| `GCP_SERVICE_ACCOUNT` | Service account email |
 
 ## Stack Configuration
 
@@ -82,8 +102,8 @@ Each environment has a config file (`Pulumi.{stack}.yaml`):
 config:
   clustera-infrastructure:aiven_project: clustera-creators
   clustera-infrastructure:kafka_service: kafka-clustera
-  clustera-infrastructure:gcp_project: clustera-data-plane
-  gcp:project: clustera-data-plane
+  clustera-infrastructure:gcp_project: clustera-control-plane
+  gcp:project: clustera-control-plane
   gcp:region: us-central1
 ```
 

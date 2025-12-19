@@ -3,8 +3,8 @@ config:
   clustera-infrastructure:aiven_project: clustera-creators
   clustera-infrastructure:kafka_service: kafka-clustera
   # GCP Configuration (shared project)
-  clustera-infrastructure:gcp_project: clustera-data-plane
-  gcp:project: clustera-data-plane
+  clustera-infrastructure:gcp_project: clustera-control-plane
+  gcp:project: clustera-control-plane
   gcp:region: us-central1
   # Gmail Integration (omit webhook for pull subscription)
   # clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera.dev/webhooks/gmail

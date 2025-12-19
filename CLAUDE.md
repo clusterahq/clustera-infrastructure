@@ -83,8 +83,8 @@ To create a new environment (e.g., `juan1`):
    config:
      clustera-infrastructure:aiven_project: clustera-creators
      clustera-infrastructure:kafka_service: kafka-clustera
-     clustera-infrastructure:gcp_project: clustera-data-plane
-     gcp:project: clustera-data-plane
+     clustera-infrastructure:gcp_project: clustera-control-plane
+     gcp:project: clustera-control-plane
      gcp:region: us-central1
    ```
 

@@ -66,7 +66,7 @@ To create the service account:
 
 ```bash
 # Set your GCP project
-PROJECT_ID="clustera-data-plane"
+PROJECT_ID="clustera-control-plane"
 
 # Create service account
 gcloud iam service-accounts create pulumi-deploy \
