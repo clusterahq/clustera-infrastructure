@@ -8,3 +8,7 @@ config:
   gcp:region: us-central1
   # Gmail Integration (omit webhook for pull subscription)
   # clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera.dev/webhooks/gmail
+
+  clustera-infrastructure:gmail_webhook_secret:
+    secure: v1:r0GQTsAuWsxkaZG7:rcGCN1fYOLttf4QNpOU6hdfusRg1G1qXTNL4YFyaHmrr9SzBXVmSTaKZHEvS7trYNBSYOoxG2yRkOl1qirjvsI/iJ3enGp7gEAm5GBb9Jzo=
+encryptionsalt: v1:oDMncnmbrjA=:v1:5aY+kxvzcfuIWQ7N:gLhu2Abd8Bkplw/09hI9ndIXCjA1cA==
