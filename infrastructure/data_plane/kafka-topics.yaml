@@ -1,111 +1,28 @@
 # Data Plane Kafka Topics
-# These topics use {stack} substitution to create environment-specific instances
+# Topics are generated from shared topics plus transport x node combinations
 
-topics:
-  ## Core Data Plane Topics
-  - name: "{stack}-cerebras"
+# Default configuration for all data plane topics
+defaults:
+  partitions: 1
+  replication: 3
+  retention_ms: "604800000"      # 7 days
+  retention_bytes: "-1"          # unlimited
+
+# Shared topics - always created
+shared_topics:
+  - name: "{stack}-clustera-runtime"
     partitions: 10
-    replication: 3
-    retention_ms: "604800000"      # 7 days (168 hours)
-    retention_bytes: "-1"          # unlimited
 
-  - name: "{stack}-ingestion-control"
-    partitions: 10
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "5000000000"  # 5 GB
+  - name: "{stack}-clustera-ignored"
 
-  - name: "{stack}-ingestion-control-errors"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "5000000000"  # 5 GB
-
-  - name: "{stack}-raw-records"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "5000000000"  # 5 GB
-
-  - name: "{stack}-runtime"
-    partitions: 10
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  ## HTTP Topics
-  - name: "{stack}-http-requests"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  - name: "{stack}-http-responses-lake"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  ## NGINX Topics
-  - name: "{stack}-nginx-requests"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  - name: "{stack}-nginx-responses"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  - name: "{stack}-nginx-responses-node1"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  ## SSE Topics
-  - name: "{stack}-sse-requests"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  - name: "{stack}-sse-responses-lake"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  ## WebSocket Topics
-  - name: "{stack}-websocket-requests"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  - name: "{stack}-websocket-responses"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  - name: "{stack}-websocket-responses-node1"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  ## WS Topics
-  - name: "{stack}-ws-requests"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
-
-  - name: "{stack}-ws-responses-lake"
-    partitions: 1
-    replication: 3
-    retention_ms: "604800000"      # 7 days
-    retention_bytes: "-1"          # unlimited
+# Transport x Node topic generation
+# Creates topics for each transport x node combination
+# Pattern: {stack}-{transport}-responses-{node}
+transport_node_topics:
+  template: "{stack}-{transport}-responses-{node}"
+  transports:
+    - http
+    - websocket
+    - sse
+  nodes:
+    - node-1
