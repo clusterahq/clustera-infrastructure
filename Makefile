@@ -1,9 +1,9 @@
-.PHONY: help install init preview up refresh destroy clean select-dev select-testing select-staging select-prod
+.PHONY: help install init preview up refresh destroy clean select-dev select-testing select-staging select-prod topics topics-all
 
 help:
 	@echo "Clustera Infrastructure - Pulumi Commands"
 	@echo ""
-	@echo "Environments: development, testing, staging, prod"
+	@echo "Environments: development, testing, staging, prod, steve1"
 	@echo ""
 	@echo "Setup:"
 	@echo "  make install          Install dependencies with uv"
@@ -21,6 +21,11 @@ help:
 	@echo "  make refresh          Refresh Pulumi state"
 	@echo "  make destroy          Destroy infrastructure"
 	@echo "  make outputs          Show stack outputs"
+	@echo ""
+	@echo "Kafka Auditing (requires: pip install aiven-client && avn user login):"
+	@echo "  make topics           List topics for current stack"
+	@echo "  make topics-all       List ALL topics (all environments)"
+	@echo "  make topics-audit     Compare live topics to managed definitions"
 	@echo ""
 	@echo "Maintenance:"
 	@echo "  make clean            Remove virtual environment"
@@ -111,3 +116,29 @@ clean:
 	@echo "Cleaning up virtual environment..."
 	rm -rf .venv
 	rm -f uv.lock
+
+# Kafka Topic Auditing (requires: pip install aiven-client && avn user login)
+topics:
+	@echo "Listing Kafka topics for current stack..."
+	@echo "Aiven Project: clustera-creators"
+	@echo "Kafka Service: kafka-clustera"
+	@echo ""
+	@avn service topic-list kafka-clustera --project clustera-creators 2>/dev/null || \
+		(echo "Error: Aiven CLI not installed or not logged in." && \
+		 echo "Install: pip install aiven-client" && \
+		 echo "Login:   avn user login" && exit 1)
+
+topics-all:
+	@echo "Listing ALL Kafka topics (all environments)..."
+	@echo ""
+	@avn service topic-list kafka-clustera --project clustera-creators --format json 2>/dev/null | \
+		python3 -c "import sys,json; topics=json.load(sys.stdin); [print(t['topic_name']) for t in sorted(topics, key=lambda x: x['topic_name'])]" || \
+		(echo "Error: Aiven CLI not installed or not logged in." && \
+		 echo "Install: pip install aiven-client" && \
+		 echo "Login:   avn user login" && exit 1)
+
+topics-audit:
+	@echo "Auditing: Comparing Kafka topics to managed definitions..."
+	@echo ""
+	@python3 scripts/audit-topics.py 2>/dev/null || \
+		(echo "Audit script not found. Run: make topics-all to list all topics.")
