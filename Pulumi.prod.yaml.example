@@ -7,3 +7,19 @@ config:
   clustera-infrastructure:gcp_project: your-gcp-project-id-prod
   gcp:project: your-gcp-project-id-prod
   gcp:region: us-central1
+
+  # Cloudflare DNS Configuration (optional)
+  clustera-infrastructure:cloudflare_zone_id: your-cloudflare-zone-id
+  clustera-infrastructure:nodes:
+    - name: "1"
+      ips:
+        - "203.0.113.1"
+      domain: "1.clustera.io"
+    - name: "2"
+      ips:
+        - "203.0.113.2"
+      domain: "2.clustera.io"
+    - name: "3"
+      ips:
+        - "203.0.113.3"
+      domain: "3.clustera.io"

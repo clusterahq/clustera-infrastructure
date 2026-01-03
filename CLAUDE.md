@@ -1,6 +1,6 @@
 # clustera-infrastructure
 
-Pulumi-based Infrastructure as Code (IaC) for the Clustera platform. Manages cloud resources across Aiven (Kafka) and GCP (Pub/Sub), with Cloudflare R2 for state storage.
+Pulumi-based Infrastructure as Code (IaC) for the Clustera platform. Manages cloud resources across Aiven (Kafka), GCP (Pub/Sub), and Cloudflare (DNS), with Cloudflare R2 for state storage.
 
 ## Quick Reference
 
@@ -29,7 +29,8 @@ clustera-infrastructure/
 ├── __main__.py                           # Pulumi entry point
 ├── infrastructure/
 │   ├── control-plane/                    # (future) Control plane resources
-│   ├── core/                             # (future) Core shared resources
+│   ├── core/                             # Core shared resources
+│   │   └── cloudflare.py                 # Cloudflare DNS A records
 │   ├── data_plane/                       # Data plane Kafka topics
 │   │   ├── kafka.py                      # Topic creation logic
 │   │   └── kafka-topics.yaml             # Topic definitions
@@ -140,6 +141,32 @@ Topics are defined in `kafka-topics.yaml` files and use `{stack}` substitution f
 - IAM binding for `gmail-api-push@system.gserviceaccount.com`
 - Push or pull subscription based on `gmail_webhook_endpoint` config
 
+### Cloudflare DNS
+
+**Cluster Node A Records** (`infrastructure/core/cloudflare.py`):
+- Manages DNS A records for cluster nodes
+- Each node can have one or more IP addresses
+- Domain names configured per environment
+- TTL: 300 seconds (5 minutes)
+- Direct DNS (not proxied through Cloudflare)
+
+**Configuration** (in `Pulumi.{stack}.yaml`):
+```yaml
+clustera-infrastructure:cloudflare_zone_id: your-zone-id
+clustera-infrastructure:nodes:
+  - name: "1"
+    ips: ["203.0.113.1"]
+    domain: "1.clustera.io"
+  - name: "staging-1"
+    ips: ["192.0.2.10", "192.0.2.11"]  # Multiple IPs supported
+    domain: "staging-1.clustera.io"
+```
+
+**Node Configuration Fields**:
+- `name`: Node identifier (e.g., "1", "staging-1", "development-2")
+- `ips`: List of IP addresses (one A record created per IP)
+- `domain`: Fully qualified domain name (FQDN)
+
 ## Adding New Topics
 
 ### For a New Integration
@@ -184,6 +211,10 @@ pulumi config set gcp:region us-central1
 
 ```bash
 pulumi config set gmail_webhook_endpoint https://your-endpoint.com/webhook
+pulumi config set cloudflare_zone_id <your-zone-id>
+pulumi config set-all --path nodes[0].name=1 \
+                       --path nodes[0].domain=1.clustera.io \
+                       --path nodes[0].ips[0]=203.0.113.1
 ```
 
 ### Environment Variables (.env)
@@ -201,6 +232,7 @@ PULUMI_CONFIG_PASSPHRASE=<passphrase>
 # Providers
 AIVEN_TOKEN=<aiven-api-token>
 GOOGLE_CREDENTIALS=keys/gcp/service-account.json
+CLOUDFLARE_API_TOKEN=<cloudflare-api-token>  # Optional, for DNS management
 ```
 
 ## State Backend

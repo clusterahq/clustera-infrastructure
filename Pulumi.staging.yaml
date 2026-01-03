@@ -10,4 +10,8 @@ config:
   clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera-staging.io/webhooks/gmail
   clustera-infrastructure:gmail_webhook_secret:
     secure: v1:5WB772bvETh4q6gD:dBwtuv2VLTTgvKLE0tQ/cyEx6l+WWTyDqxTIdoD8BTkuN84JFg+pA9QvYFDCL8s70poaBNhhOkhL+wOhMVI8u3TXq/O2GNNFUCH0RT8sqi4=
+  clustera-infrastructure:nodes:
+    - name: "staging-1"
+      ips: ["165.1.76.248"]
+      domain: "staging-1.clustera.io"
 encryptionsalt: v1:d83qim1llaM=:v1:BbMEJ7qW+wQlra5o:OifRVjpPjl6GkSqNJAMkRl762McwXw==

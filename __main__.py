@@ -5,6 +5,7 @@ from infrastructure import (
     create_kafka_resources,
     create_pubsub_resources,
     create_data_plane_kafka_resources,
+    create_cloudflare_dns_records,
 )
 
 
@@ -23,12 +24,16 @@ def main():
     # Note: Requires org policy override (set via gcloud, not Pulumi)
     gmail_pubsub = create_pubsub_resources(config)
 
+    # Create Cloudflare DNS A records for cluster nodes
+    cloudflare_dns = create_cloudflare_dns_records(config)
+
     # Export outputs
     pulumi.export("kafka_topic_names", kafka_resources["topic_names"])
     pulumi.export("data_plane_kafka_topic_names", data_plane_kafka["topic_names"])
     pulumi.export("gmail_topic_name", gmail_pubsub["topic_name"])
     pulumi.export("gmail_topic_path", gmail_pubsub["topic_path"])  # For Gmail API watch() calls
     pulumi.export("gmail_subscription_name", gmail_pubsub["subscription_name"])
+    pulumi.export("cloudflare_dns_domains", cloudflare_dns["domains"])
     pulumi.export("stack", stack)
 
 

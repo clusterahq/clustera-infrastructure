@@ -7,3 +7,15 @@ config:
   clustera-infrastructure:gcp_project: your-gcp-project-id-staging
   gcp:project: your-gcp-project-id-staging
   gcp:region: us-central1
+
+  # Cloudflare DNS Configuration (optional)
+  clustera-infrastructure:cloudflare_zone_id: your-cloudflare-zone-id
+  clustera-infrastructure:nodes:
+    - name: "staging-1"
+      ips:
+        - "192.0.2.10"
+      domain: "staging-1.clustera.io"
+    - name: "staging-2"
+      ips:
+        - "192.0.2.11"
+      domain: "staging-2.clustera.io"
