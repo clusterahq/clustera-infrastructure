@@ -7,3 +7,15 @@ config:
   clustera-infrastructure:gcp_project: your-gcp-project-id-testing
   gcp:project: your-gcp-project-id-testing
   gcp:region: us-central1
+
+  # Cloudflare DNS Configuration (optional)
+  clustera-infrastructure:cloudflare_zone_id: your-cloudflare-zone-id
+  clustera-infrastructure:nodes:
+    - name: "testing-1"
+      ips:
+        - "192.0.2.20"
+      domain: "testing-1.clustera.io"
+    - name: "testing-2"
+      ips:
+        - "192.0.2.21"
+      domain: "testing-2.clustera.io"

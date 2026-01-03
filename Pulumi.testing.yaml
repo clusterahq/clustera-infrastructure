@@ -6,4 +6,12 @@ config:
   clustera-infrastructure:gcp_project: clustera-control-plane
   gcp:project: clustera-control-plane
   gcp:region: us-central1
+  # Gmail Integration
+  clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera-testing.io/webhooks/gmail
+  clustera-infrastructure:gmail_webhook_secret:
+    secure: v1:5WB772bvETh4q6gD:dBwtuv2VLTTgvKLE0tQ/cyEx6l+WWTyDqxTIdoD8BTkuN84JFg+pA9QvYFDCL8s70poaBNhhOkhL+wOhMVI8u3TXq/O2GNNFUCH0RT8sqi4=
+  clustera-infrastructure:nodes:
+    - name: "testing-1"
+      ips: ["165.1.76.248"]
+      domain: "testing-1.clustera.io"
 encryptionsalt: v1:4QINlrj3++g=:v1:qktDICrg6gGvq0zo:E2gHKPlToVeY/9QNivbXZ3XwcjF/Og==
