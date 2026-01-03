@@ -101,9 +101,9 @@ jobs:
       id-token: write
 
     # Dynamically set environment based on branch
-    # Personal dev branches (steve1, etc.) use 'development' environment for secrets
+    # Non-production branches (staging, testing, steve1, etc.) use 'development' environment for secrets
     environment:
-      name: ${{ github.ref_name == 'main' && 'production' || (github.ref_name == 'staging' && 'staging' || (github.ref_name == 'testing' && 'testing' || 'development')) }}
+      name: ${{ github.ref_name == 'main' && 'production' || 'development' }}
 
     steps:
       - name: Checkout code
