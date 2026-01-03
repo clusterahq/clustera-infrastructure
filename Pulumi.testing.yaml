@@ -6,6 +6,8 @@ config:
   clustera-infrastructure:gcp_project: clustera-control-plane
   gcp:project: clustera-control-plane
   gcp:region: us-central1
+  # Gmail Integration
+  clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera-testing.io/webhooks/gmail
   # Cloudflare DNS Configuration
   clustera-infrastructure:nodes:
     - name: "testing-1"
