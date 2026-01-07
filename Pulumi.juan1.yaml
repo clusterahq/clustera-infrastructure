@@ -11,5 +11,5 @@ config:
 
   clustera-infrastructure:nodes:
     - name: "juan-1"
-      ips: []
+      ips: ["165.1.76.248"]
       domain: "juan1.clustera.io"
