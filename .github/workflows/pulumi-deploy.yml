@@ -8,6 +8,7 @@ on:
       - staging       # Deploy to staging
       - testing       # Deploy to testing
       - steve1        # Deploy to steve1
+      - juan1         # Deploy to juan1
   pull_request:
     branches:
       - main
@@ -15,6 +16,7 @@ on:
       - staging
       - testing
       - steve1
+      - juan1
 
 jobs:
   preview:
@@ -57,6 +59,7 @@ jobs:
             staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
             testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
             steve1) echo "stack=steve1" >> $GITHUB_OUTPUT ;;
+            juan1) echo "stack=juan1" >> $GITHUB_OUTPUT ;;
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
@@ -131,6 +134,7 @@ jobs:
             staging) echo "stack=staging" >> $GITHUB_OUTPUT ;;
             testing) echo "stack=testing" >> $GITHUB_OUTPUT ;;
             steve1) echo "stack=steve1" >> $GITHUB_OUTPUT ;;
+            juan1) echo "stack=juan1" >> $GITHUB_OUTPUT ;;
             *) echo "stack=development" >> $GITHUB_OUTPUT ;;
           esac
 
