@@ -95,9 +95,10 @@ def create_cloudflare_dns_records(config: pulumi.Config) -> dict[str, Any]:
                 zone_id=zone_id,
                 name=node_domain,
                 type="A",
-                value=ip_address,
+                content=ip_address,
                 ttl=300,  # 5 minutes
                 proxied=False,  # Direct DNS, not proxied through Cloudflare
+                allow_overwrite=True,  # Allow adopting existing records
                 comment=f"Clustera node {node_name} (managed by Pulumi)",
                 tags=[
                     f"environment:{stack}",
