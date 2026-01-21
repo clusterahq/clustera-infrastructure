@@ -16,15 +16,17 @@ import pulumi
 import pulumi_aiven as aiven
 
 
-DEFAULT_TOPIC_CONFIG = {
-    "partitions": 1,
-    "replication": 3,
-    "retention_ms": "604800000",      # 7 days
-    "retention_bytes": "-1",          # unlimited
-    "cleanup_policy": "delete",
-    "compression_type": "snappy",
-    "max_message_bytes": "26214400",  # 25 MB (for large enrichment payloads)
-}
+def get_default_topic_config(config: pulumi.Config) -> dict:
+    """Get default topic configuration, allowing stack-level overrides."""
+    return {
+        "partitions": config.get_int("default_partitions") or 1,
+        "replication": 3,
+        "retention_ms": "604800000",      # 7 days
+        "retention_bytes": "-1",          # unlimited
+        "cleanup_policy": "delete",
+        "compression_type": "snappy",
+        "max_message_bytes": "26214400",  # 25 MB (for large enrichment payloads)
+    }
 
 
 def _load_topics_from_file(file_path: Path) -> tuple[list[dict], dict]:
@@ -98,7 +100,7 @@ def create_data_plane_kafka_resources(config: pulumi.Config) -> dict:
     topics_to_create, file_defaults = _load_topics_from_file(topics_file)
 
     # Merge file defaults with global defaults
-    effective_defaults = DEFAULT_TOPIC_CONFIG.copy()
+    effective_defaults = get_default_topic_config(config)
     effective_defaults.update(file_defaults)
 
     # Create topics

@@ -7,16 +7,17 @@ import pulumi_aiven as aiven
 import yaml
 
 
-# Default configuration for Kafka topics
-DEFAULT_TOPIC_CONFIG = {
-    "partitions": 1,
-    "replication": 2,
-    "retention_ms": "259200000",  # 3 days
-    "retention_bytes": "629145600",  # 600 MB
-    "cleanup_policy": "delete",
-    "compression_type": "snappy",
-    "max_message_bytes": "26214400",  # 25 MB (for large enrichment payloads)
-}
+def get_default_topic_config(config: pulumi.Config) -> dict:
+    """Get default topic configuration, allowing stack-level overrides."""
+    return {
+        "partitions": config.get_int("default_partitions") or 1,
+        "replication": 2,
+        "retention_ms": "259200000",  # 3 days
+        "retention_bytes": "629145600",  # 600 MB
+        "cleanup_policy": "delete",
+        "compression_type": "snappy",
+        "max_message_bytes": "26214400",  # 25 MB (for large enrichment payloads)
+    }
 
 
 def _find_topic_files() -> list[Path]:
@@ -112,13 +113,14 @@ def create_kafka_resources(config: pulumi.Config) -> dict:
         topic_name = topic_def["name"]
 
         # Build configuration by merging defaults with overrides
-        partitions = topic_def.get("partitions", DEFAULT_TOPIC_CONFIG["partitions"])
-        replication = topic_def.get("replication", DEFAULT_TOPIC_CONFIG["replication"])
-        retention_ms = topic_def.get("retention_ms", DEFAULT_TOPIC_CONFIG["retention_ms"])
-        retention_bytes = topic_def.get("retention_bytes", DEFAULT_TOPIC_CONFIG["retention_bytes"])
-        cleanup_policy = topic_def.get("cleanup_policy", DEFAULT_TOPIC_CONFIG["cleanup_policy"])
-        compression_type = topic_def.get("compression_type", DEFAULT_TOPIC_CONFIG["compression_type"])
-        max_message_bytes = topic_def.get("max_message_bytes", DEFAULT_TOPIC_CONFIG["max_message_bytes"])
+        default_config = get_default_topic_config(config)
+        partitions = topic_def.get("partitions", default_config["partitions"])
+        replication = topic_def.get("replication", default_config["replication"])
+        retention_ms = topic_def.get("retention_ms", default_config["retention_ms"])
+        retention_bytes = topic_def.get("retention_bytes", default_config["retention_bytes"])
+        cleanup_policy = topic_def.get("cleanup_policy", default_config["cleanup_policy"])
+        compression_type = topic_def.get("compression_type", default_config["compression_type"])
+        max_message_bytes = topic_def.get("max_message_bytes", default_config["max_message_bytes"])
 
         # Apply template substitution for {stack} variable in topic name
         full_topic_name = topic_name.replace("{stack}", stack)

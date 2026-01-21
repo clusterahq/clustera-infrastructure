@@ -2,6 +2,7 @@ config:
   # Aiven Configuration
   clustera-infrastructure:aiven_project: clustera-creators
   clustera-infrastructure:kafka_service: kafka-clustera
+  clustera-infrastructure:default_partitions: 10
   # GCP Configuration
   clustera-infrastructure:gcp_project: clustera-control-plane
   gcp:project: clustera-control-plane
