@@ -1,0 +1,17 @@
+config:
+  # Aiven Configuration (shared Kafka cluster)
+  clustera-infrastructure:aiven_project: clustera-creators
+  clustera-infrastructure:kafka_service: kafka-clustera
+  # GCP Configuration (shared project)
+  clustera-infrastructure:gcp_project: clustera-control-plane
+  gcp:project: clustera-control-plane
+  gcp:region: us-central1
+  # Cloudflare DNS
+  clustera-infrastructure:cloudflare_zone_id: 7e87f4cf933af2f6122380dd62516de4
+  # Gmail Integration (omit webhook for pull subscription)
+  # clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera.dev/webhooks/gmail
+
+  clustera-infrastructure:nodes:
+    - name: "dev"
+      ips: ["165.1.76.248"]
+      domain: "dev-1.clustera.io"
