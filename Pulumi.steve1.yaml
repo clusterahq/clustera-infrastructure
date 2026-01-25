@@ -2,17 +2,16 @@ config:
   # Aiven Configuration (shared Kafka cluster)
   clustera-infrastructure:aiven_project: clustera-creators
   clustera-infrastructure:kafka_service: kafka-clustera
-  # GCP Configuration (shared project)
-  clustera-infrastructure:gcp_project: clustera-control-plane
-  gcp:project: clustera-control-plane
-  gcp:region: us-central1
+  # GCP Configuration - disabled (Pub/Sub not currently needed)
+  # clustera-infrastructure:gcp_project: clustera-control-plane
+  # gcp:project: clustera-control-plane
+  # gcp:region: us-central1
   # Cloudflare DNS
   clustera-infrastructure:cloudflare_zone_id: 7e87f4cf933af2f6122380dd62516de4
-  # Gmail Integration (omit webhook for pull subscription)
+  # Gmail Integration - disabled (Pub/Sub not currently needed)
   # clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera.dev/webhooks/gmail
-
-  clustera-infrastructure:gmail_webhook_secret:
-    secure: v1:r0GQTsAuWsxkaZG7:rcGCN1fYOLttf4QNpOU6hdfusRg1G1qXTNL4YFyaHmrr9SzBXVmSTaKZHEvS7trYNBSYOoxG2yRkOl1qirjvsI/iJ3enGp7gEAm5GBb9Jzo=
+  # clustera-infrastructure:gmail_webhook_secret:
+  #   secure: v1:r0GQTsAuWsxkaZG7:rcGCN1fYOLttf4QNpOU6hdfusRg1G1qXTNL4YFyaHmrr9SzBXVmSTaKZHEvS7trYNBSYOoxG2yRkOl1qirjvsI/iJ3enGp7gEAm5GBb9Jzo=
   clustera-infrastructure:nodes:
     - name: "steve1"
       ips: ["165.1.76.248"]

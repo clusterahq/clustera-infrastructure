@@ -3,10 +3,10 @@ config:
   clustera-infrastructure:aiven_project: your-aiven-project-name-dev
   clustera-infrastructure:kafka_service: your-kafka-service-name-dev
 
-  # GCP Configuration
-  clustera-infrastructure:gcp_project: your-gcp-project-id-dev
-  gcp:project: your-gcp-project-id-dev
-  gcp:region: us-central1
+  # GCP Configuration - disabled (Pub/Sub not currently needed)
+  # clustera-infrastructure:gcp_project: your-gcp-project-id-dev
+  # gcp:project: your-gcp-project-id-dev
+  # gcp:region: us-central1
 
   # Cloudflare DNS Configuration (optional)
   clustera-infrastructure:cloudflare_zone_id: your-cloudflare-zone-id
