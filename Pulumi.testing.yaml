@@ -11,7 +11,7 @@ config:
   # Gmail Integration - disabled (Pub/Sub not currently needed)
   # clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera-testing.dev/webhooks/gmail
   clustera-infrastructure:nodes:
-    - name: "1"
+    - name: "testing-1"
       ips: ["165.1.76.248"]
-      domain: "1.clustera-testing.dev"
+      domain: "testing-1.clustera.io"
 encryptionsalt: v1:4QINlrj3++g=:v1:qktDICrg6gGvq0zo:E2gHKPlToVeY/9QNivbXZ3XwcjF/Og==
