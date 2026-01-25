@@ -9,9 +9,9 @@ config:
   # Cloudflare DNS
   clustera-infrastructure:cloudflare_zone_id: 7e87f4cf933af2f6122380dd62516de4
   # Gmail Integration - disabled (Pub/Sub not currently needed)
-  # clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera-testing.io/webhooks/gmail
+  # clustera-infrastructure:gmail_webhook_endpoint: https://integrations.clustera-testing.dev/webhooks/gmail
   clustera-infrastructure:nodes:
-    - name: "testing-1"
+    - name: "1"
       ips: ["165.1.76.248"]
-      domain: "testing-1.clustera.io"
+      domain: "1.clustera-testing.dev"
 encryptionsalt: v1:4QINlrj3++g=:v1:qktDICrg6gGvq0zo:E2gHKPlToVeY/9QNivbXZ3XwcjF/Og==
