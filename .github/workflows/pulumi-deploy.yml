@@ -29,9 +29,9 @@ jobs:
       pull-requests: write
       id-token: write
 
-    # Use environment based on target branch to access environment secrets
+    # Use production environment for all branches (secrets are shared)
     environment:
-      name: ${{ github.base_ref == 'main' && 'production' || 'dev' }}
+      name: production
 
     steps:
       - name: Checkout code
@@ -104,10 +104,9 @@ jobs:
       contents: read
       id-token: write
 
-    # Dynamically set environment based on branch
-    # Non-production branches (staging, testing, steve1, etc.) use 'dev' environment for secrets
+    # Use production environment for all branches (secrets are shared)
     environment:
-      name: ${{ github.ref_name == 'main' && 'production' || 'dev' }}
+      name: production
 
     steps:
       - name: Checkout code
