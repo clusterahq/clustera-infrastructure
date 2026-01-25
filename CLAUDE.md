@@ -58,7 +58,7 @@ Deployments are **branch-based**. Each branch deploys to its corresponding stack
 
 | Branch | Stack | Purpose | Protection |
 |--------|-------|---------|------------|
-| `development` | development | Shared dev environment | None |
+| `dev` | dev | Shared dev environment | None |
 | `testing` | testing | Automated tests, QA | None |
 | `staging` | staging | Pre-production validation | None |
 | `main` | prod | Live production | **Protected** |

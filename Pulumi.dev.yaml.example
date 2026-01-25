@@ -1,0 +1,22 @@
+config:
+  # Aiven Configuration
+  clustera-infrastructure:aiven_project: your-aiven-project-name-dev
+  clustera-infrastructure:kafka_service: your-kafka-service-name-dev
+
+  # GCP Configuration
+  clustera-infrastructure:gcp_project: your-gcp-project-id-dev
+  gcp:project: your-gcp-project-id-dev
+  gcp:region: us-central1
+
+  # Cloudflare DNS Configuration (optional)
+  clustera-infrastructure:cloudflare_zone_id: your-cloudflare-zone-id
+  clustera-infrastructure:nodes:
+    - name: "dev-1"
+      ips:
+        - "192.0.2.1"
+      domain: "dev-1.clustera.io"
+    - name: "dev-2"
+      ips:
+        - "192.0.2.2"
+        - "192.0.2.3"  # Multiple IPs supported
+      domain: "dev-2.clustera.io"

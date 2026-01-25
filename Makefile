@@ -3,7 +3,7 @@
 help:
 	@echo "Clustera Infrastructure - Pulumi Commands"
 	@echo ""
-	@echo "Environments: development, testing, staging, prod, steve1"
+	@echo "Environments: dev, testing, staging, prod, steve1"
 	@echo ""
 	@echo "Setup:"
 	@echo "  make install          Install dependencies with uv"
@@ -49,7 +49,7 @@ init:
 	@echo "  2. 📦 R2 bucket created (will check automatically)"
 	@echo "  3. 📝 Stack config YAML ready (Pulumi.<stack>.yaml)"
 	@echo ""
-	@echo "Available environments: development, testing, staging, prod"
+	@echo "Available environments: dev, testing, staging, prod"
 	@read -p "Enter stack name: " stack; \
 	echo ""; \
 	echo "🔐 Logging in to R2 backend..."; \
@@ -77,8 +77,8 @@ init:
 	echo "  5. Deploy: make up"
 
 select-dev:
-	@echo "Selecting development stack..."
-	uv run pulumi stack select development
+	@echo "Selecting dev stack..."
+	uv run pulumi stack select dev
 
 select-testing:
 	@echo "Selecting testing stack..."
