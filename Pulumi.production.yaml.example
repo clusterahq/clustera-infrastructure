@@ -1,9 +1,0 @@
-config:
-  # Aiven Configuration
-  clustera-infrastructure:aiven_project: your-aiven-project-name-production
-  clustera-infrastructure:kafka_service: your-kafka-service-name-production
-
-  # GCP Configuration
-  clustera-infrastructure:gcp_project: your-gcp-project-id-production
-  gcp:project: your-gcp-project-id-production
-  gcp:region: us-central1
